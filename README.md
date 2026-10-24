@@ -28,7 +28,7 @@
 
 * **Course:** FER202 — Front-End Web Development with ReactJS
 * **Institution:** FPT University
-* **Internal Code Guidelines:** Refer to [FRONTEND_GUIDELINES.md](./FRONTEND_GUIDELINES.md)
+* **Internal Code Guidelines:** Refer to [guidelines.md](./guidelines.md)
 
 ---
 
