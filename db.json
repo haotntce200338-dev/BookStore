@@ -1,0 +1,78 @@
+{
+  "categories": [
+    {
+      "id": "cat-1",
+      "name": "Công nghệ thông tin",
+      "description": "Sách lập trình, mạng và phần mềm"
+    },
+    {
+      "id": "cat-2",
+      "name": "Kinh tế - Khởi nghiệp",
+      "description": "Sách kỹ năng kinh doanh, quản trị và đầu tư"
+    },
+    {
+      "id": "cat-3",
+      "name": "Văn học",
+      "description": "Tiểu thuyết, truyện ngắn kinh điển"
+    }
+  ],
+  "books": [
+    {
+      "id": "b-101",
+      "title": "Học ReactJS Toàn Tập",
+      "author": "FPT Education",
+      "categoryId": "cat-1",
+      "price": 150000,
+      "originalPrice": 180000,
+      "stock": 35,
+      "image": "https://picsum.photos/300/400?random=1",
+      "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap."
+    },
+    {
+      "id": "b-102",
+      "title": "Nhà Giả Kim",
+      "author": "Paulo Coelho",
+      "categoryId": "cat-3",
+      "price": 79000,
+      "originalPrice": 95000,
+      "stock": 50,
+      "image": "https://picsum.photos/300/400?random=2",
+      "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago."
+    }
+  ],
+  "orders": [
+    {
+      "id": "ord-1001",
+      "customerName": "Trương Anh Tuấn",
+      "phone": "0912345678",
+      "address": "Số 123 Đường 3/2, Cần Thơ",
+      "items": [
+        {
+          "bookId": "b-101",
+          "title": "Học ReactJS Toàn Tập",
+          "price": 150000,
+          "quantity": 2
+        }
+      ],
+      "totalAmount": 300000,
+      "status": "Pending",
+      "orderDate": "2026-10-24T10:00:00Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "u-1",
+      "username": "admin",
+      "password": "123",
+      "fullName": "Quản trị viên",
+      "role": "admin"
+    },
+    {
+      "id": "u-2",
+      "username": "customer",
+      "password": "123",
+      "fullName": "Khách hàng",
+      "role": "customer"
+    }
+  ]
+}
