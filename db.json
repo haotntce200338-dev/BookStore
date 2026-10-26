@@ -3,17 +3,20 @@
     {
       "id": "cat-1",
       "name": "Công nghệ thông tin",
-      "description": "Sách lập trình, mạng và phần mềm"
+      "description": "Sách lập trình, mạng và phần mềm",
+      "isDeleted": false
     },
     {
       "id": "cat-2",
       "name": "Kinh tế - Khởi nghiệp",
-      "description": "Sách kỹ năng kinh doanh, quản trị và đầu tư"
+      "description": "Sách kỹ năng kinh doanh, quản trị và đầu tư",
+      "isDeleted": false
     },
     {
       "id": "cat-3",
       "name": "Văn học",
-      "description": "Tiểu thuyết, truyện ngắn kinh điển"
+      "description": "Tiểu thuyết, truyện ngắn kinh điển",
+      "isDeleted": false
     }
   ],
   "books": [
@@ -26,7 +29,8 @@
       "originalPrice": 180000,
       "stock": 35,
       "image": "https://picsum.photos/300/400?random=1",
-      "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap."
+      "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap.",
+      "isDeleted": false
     },
     {
       "id": "b-102",
@@ -37,7 +41,8 @@
       "originalPrice": 95000,
       "stock": 50,
       "image": "https://picsum.photos/300/400?random=2",
-      "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago."
+      "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
+      "isDeleted": false
     }
   ],
   "orders": [
@@ -65,14 +70,16 @@
       "username": "admin",
       "password": "123",
       "fullName": "Quản trị viên",
-      "role": "admin"
+      "role": "admin",
+      "isDeleted": false
     },
     {
       "id": "u-2",
       "username": "customer",
       "password": "123",
       "fullName": "Khách hàng",
-      "role": "customer"
+      "role": "customer",
+      "isDeleted": false
     }
   ]
 }
