@@ -33,12 +33,19 @@ const LoginPage = () => {
     password: '',
   });
 
-  // Redirect if user is already logged in
+  // Redirect safely according to user role
   useEffect(() => {
     if (isAuthenticated) {
-      const redirectPath =
-        location.state?.from?.pathname ||
-        (role === 'admin' ? '/admin/books' : '/');
+      let redirectPath = '/';
+      const fromPath = location.state?.from?.pathname;
+
+      if (role === 'admin') {
+        redirectPath = fromPath && fromPath.startsWith('/admin') ? fromPath : '/admin/books';
+      } else {
+        // Customers are strictly kept to customer/public pages
+        redirectPath = fromPath && !fromPath.startsWith('/admin') ? fromPath : '/';
+      }
+
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, role, navigate, location]);

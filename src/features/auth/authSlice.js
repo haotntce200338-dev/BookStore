@@ -3,13 +3,21 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:3001';
 
-// Load stored user session from localStorage if present
+// Load stored user session from localStorage if present and validate integrity
 const storedUser = localStorage.getItem('currentUser');
 let initialUser = null;
 try {
-  initialUser = storedUser ? JSON.parse(storedUser) : null;
+  const parsed = storedUser ? JSON.parse(storedUser) : null;
+  // Security check: Must have valid id, username, and recognized role ('admin' or 'customer')
+  if (parsed && parsed.id && parsed.username && ['admin', 'customer'].includes(parsed.role)) {
+    initialUser = parsed;
+  } else if (storedUser) {
+    // If tampered with invalid data, wipe out corrupted/malicious localStorage
+    localStorage.removeItem('currentUser');
+  }
 } catch (error) {
   initialUser = null;
+  localStorage.removeItem('currentUser');
 }
 
 const initialState = {
