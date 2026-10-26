@@ -7,6 +7,8 @@ import { logoutUser } from './features/auth/authSlice';
 import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
 
+
+
 // Simple placeholder page for Home (to be developed by team members)
 const HomePage = () => {
   const dispatch = useDispatch();
