@@ -3,11 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import LoginPage from './features/auth/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import BookDetail from './features/books/BookDetail';
 import { logoutUser } from './features/auth/authSlice';
 import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
-
-
 
 // Simple placeholder page for Home (to be developed by team members)
 const HomePage = () => {
@@ -110,8 +109,17 @@ function App() {
           element={<Navigate to="/admin/books" replace />}
         />
 
+        {/* Route for viewing book details */}
+        <Route
+          path="/books/:id"
+          element={<BookDetail />}
+        />
+
         {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route 
+          path="*" 
+          element={<Navigate to="/" replace />} 
+        />    
       </Routes>
     </BrowserRouter>
   );
