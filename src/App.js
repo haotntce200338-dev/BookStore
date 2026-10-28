@@ -3,12 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import LoginPage from './features/auth/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import BookDetail from './features/books/BookDetail';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import { logoutUser } from './features/auth/authSlice';
 import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
 
-// Simple placeholder page for Home (to be developed by team members)
+// Temporary placeholder for Home page
 const HomePage = () => {
   const dispatch = useDispatch();
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
@@ -60,7 +61,7 @@ const HomePage = () => {
   );
 };
 
-// Simple placeholder page for Admin Books (to be developed by admin team member)
+// Temporary placeholder for Admin Books management
 const AdminBooksPlaceholder = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
@@ -91,36 +92,39 @@ const AdminBooksPlaceholder = () => {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
+      {/* Root layout wrapper with flexbox */}
+      <div className="app-container">
+        {/* Global sticky navigation bar */}
+        <Navbar />
 
-        {/* Protected Admin Routes: Chỉ cho phép tài khoản có role 'admin' */}
-        <Route
-          path="/admin/books"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminBooksPlaceholder />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={<Navigate to="/admin/books" replace />}
-        />
+        {/* Main content expands to fill available vertical space */}
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
 
-        {/* Route for viewing book details */}
-        <Route
-          path="/books/:id"
-          element={<BookDetail />}
-        />
+            {/* Protected Admin routes: Restricted to 'admin' role */}
+            <Route
+              path="/admin/books"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminBooksPlaceholder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={<Navigate to="/admin/books" replace />}
+            />
 
-        {/* Fallback route */}
-        <Route 
-          path="*" 
-          element={<Navigate to="/" replace />} 
-        />    
-      </Routes>
+            {/* Fallback route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+
+        {/* Global sticky footer */}
+        <Footer />
+      </div>
     </BrowserRouter>
   );
 }
