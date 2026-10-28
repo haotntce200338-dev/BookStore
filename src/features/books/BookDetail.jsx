@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   Alert,
   Badge,
@@ -8,88 +8,84 @@ import {
   Card,
   Col,
   Container,
+  Form,
+  InputGroup,
   Row,
   Spinner,
+  Toast,
+  ToastContainer,
 } from 'react-bootstrap';
 
 import { fetchBookById } from './bookSlice';
+import { addToCart } from '../cart/cartSlice';
 
-// Default image used when the book cover is missing or cannot load.
 const NO_COVER = 'https://placehold.co/400x560?text=No+Cover';
 
-/**
- * Format a book price using Vietnamese number formatting.
- *
- * @param {number|string} price - The price to format.
- * @returns {string} The formatted price or a fallback message.
- */
 function formatPrice(price) {
-  // Check whether the price is missing or invalid.
-  if (
-    price === null ||
-    price === undefined ||
-    price === '' ||
-    !Number.isFinite(Number(price))
-  ) {
+  if (price === null || price === undefined || !Number.isFinite(Number(price))) {
     return 'Chưa cập nhật';
   }
-
-  // Add thousand separators and the Vietnamese currency unit.
   return Number(price).toLocaleString('vi-VN') + ' đ';
 }
 
-/**
- * Display the details of one book selected by its route ID.
- *
- */
 function BookDetail() {
-  // Read the book ID from a URL such as /books/b-101.
   const { id } = useParams();
-
-  // Get the dispatch function used to send Redux actions.
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  // Read the current book and request status from Redux.
-  const {
-    currentBook,
-    bookLoading,
-    bookError,
-    bookNotFound,
-  } = useSelector((state) => state.books);
+  const { currentBook, bookLoading, bookError, bookNotFound } = useSelector(
+    (state) => state.books
+  );
 
-  /**
-   * Request the book details whenever the route ID changes.
-   * fetchBookById handles the API request in bookSlice.js.
-   */
+  const [quantity, setQuantity] = useState(1);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   useEffect(() => {
+    setQuantity(1);
     dispatch(fetchBookById(id));
   }, [dispatch, id]);
 
-  /**
-   * Display a loading indicator while the book is being fetched.
-   */
+  const maxStock = Number(currentBook?.stock) || 0;
+  const isOutOfStock = maxStock <= 0;
+
+  const handleDecrease = () => setQuantity((prev) => Math.max(1, prev - 1));
+  const handleIncrease = () => setQuantity((prev) => Math.min(maxStock, prev + 1));
+
+  const handleQuantityChange = (e) => {
+    const val = parseInt(e.target.value, 10);
+    if (isNaN(val)) setQuantity(1);
+    else setQuantity(Math.max(1, Math.min(val, maxStock)));
+  };
+
+  const handleAddToCart = () => {
+    if (isOutOfStock) return;
+    dispatch(addToCart({ book: currentBook, quantity }));
+    setToastMessage(`Đã thêm ${quantity} cuốn "${currentBook.title}" vào giỏ hàng!`);
+    setShowToast(true);
+  };
+
+  const handleBuyNow = () => {
+    if (isOutOfStock) return;
+    dispatch(addToCart({ book: currentBook, quantity }));
+    navigate('/cart');
+  };
+
   if (bookLoading) {
     return (
-      <Container className="my-4 text-center">
+      <Container className="my-4 text-center py-5">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Đang tải thông tin sách...</p>
+        <p className="mt-3 text-muted">Đang tải thông tin sách...</p>
       </Container>
     );
   }
 
-  /**
-   * Display an empty state when the requested book does not exist.
-   */
   if (bookNotFound) {
     return (
       <Container className="my-4">
-        <Alert variant="info">
+        <Alert variant="info" className="text-center p-4">
           <Alert.Heading>Không tìm thấy sách</Alert.Heading>
-
-          <p>
-            Cuốn sách này không tồn tại hoặc đã bị xóa.
-          </p>
-
+          <p className="mb-3">Cuốn sách này không tồn tại hoặc đã bị xóa.</p>
           <Button as={Link} to="/" variant="primary">
             Quay lại trang chủ
           </Button>
@@ -98,19 +94,12 @@ function BookDetail() {
     );
   }
 
-  /**
-   * Display an error message and allow the user to retry the request.
-   */
   if (bookError) {
     return (
       <Container className="my-4">
-        <Alert variant="danger">
+        <Alert variant="danger" className="text-center p-4">
           <p>{bookError}</p>
-
-          <Button
-            variant="outline-danger"
-            onClick={() => dispatch(fetchBookById(id))}
-          >
+          <Button variant="outline-danger" onClick={() => dispatch(fetchBookById(id))}>
             Thử lại
           </Button>
         </Alert>
@@ -118,52 +107,41 @@ function BookDetail() {
     );
   }
 
-  /**
-   * Show a loading indicator during the initial render before
-   * the useEffect request has updated the Redux state.
-   */
-  if (!currentBook) {
-    return (
-      <Container className="my-4 text-center">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Đang tải thông tin sách...</p>
-      </Container>
-    );
-  }
+  if (!currentBook) return null;
 
-  // Determine the stock status from the book data.
-  const inStock = Number(currentBook.stock) > 0;
-
-  /**
-   * Render the details of the book returned by the API.
-   */
   return (
     <Container className="my-4">
-      <Button
-        as={Link}
-        to="/"
-        variant="outline-secondary"
-        className="mb-4"
-      >
+      {/* Toast Notification when added to cart */}
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1055 }}>
+        <Toast show={showToast} onClose={() => setShowToast(false)} delay={3000} autohide bg="success">
+          <Toast.Header>
+            <strong className="me-auto text-success">🛒 Giỏ hàng BookStore</strong>
+            <small>Vừa xong</small>
+          </Toast.Header>
+          <Toast.Body className="text-white">
+            <p className="mb-2">{toastMessage}</p>
+            <Button as={Link} to="/cart" size="sm" variant="light" className="text-success fw-bold">
+              Xem giỏ hàng →
+            </Button>
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
+
+      <Button as={Link} to="/" variant="outline-secondary" className="mb-4">
         ← Quay lại
       </Button>
 
       <Row className="g-4">
-        {/* Display the book cover on the left. */}
+        {/* Left Column: Cover image */}
         <Col xs={12} md={5} lg={4}>
-          <Card className="shadow-sm">
+          <Card className="shadow-sm border-0">
             <Card.Img
               variant="top"
               src={currentBook.image || NO_COVER}
               alt={currentBook.title || 'Bìa sách'}
               className="p-3"
-              style={{
-                width: '100%',
-                maxHeight: '520px',
-                objectFit: 'contain',
-              }}
+              style={{ width: '100%', maxHeight: '520px', objectFit: 'contain' }}
               onError={(event) => {
-                // Prevent an error loop if the fallback image also fails.
                 event.currentTarget.onerror = null;
                 event.currentTarget.src = NO_COVER;
               }}
@@ -171,54 +149,94 @@ function BookDetail() {
           </Card>
         </Col>
 
-        {/* Display the book information on the right. */}
+        {/* Right Column: Book details & purchase controls */}
         <Col xs={12} md={7} lg={8}>
-          <p className="text-secondary mb-2">
-            CHI TIẾT SÁCH
-          </p>
+          <p className="text-secondary mb-2">CHI TIẾT SÁCH</p>
+          <h1 className="h2 fw-bold mb-3">{currentBook.title}</h1>
 
-          <h1 className="h2 fw-bold mb-3">
-            {currentBook.title}
-          </h1>
+          <p className="mb-2"><strong>Mã sách:</strong> {currentBook.id}</p>
+          <p className="mb-2"><strong>Tác giả:</strong> {currentBook.author || 'Chưa cập nhật'}</p>
 
-          <p>
-            <strong>Mã sách:</strong> {currentBook.id}
-          </p>
-
-          <p>
-            <strong>Tác giả:</strong>{' '}
-            {currentBook.author || 'Chưa cập nhật'}
-          </p>
-
-          <p>
+          <p className="mb-3">
             <strong>Tình trạng:</strong>{' '}
-            <Badge bg={inStock ? 'success' : 'danger'}>
-              {inStock
-                ? `Còn hàng (${currentBook.stock})`
-                : 'Hết hàng'}
+            <Badge bg={isOutOfStock ? 'danger' : maxStock <= 10 ? 'warning' : 'success'}>
+              {isOutOfStock ? 'Hết hàng' : `Còn hàng (${maxStock})`}
             </Badge>
           </p>
 
           <div className="d-flex align-items-center flex-wrap gap-3 my-4">
-            <span className="text-danger fs-3 fw-bold">
-              {formatPrice(currentBook.price)}
-            </span>
-
-            {Number(currentBook.originalPrice) >
-              Number(currentBook.price) && (
+            <span className="text-danger fs-3 fw-bold">{formatPrice(currentBook.price)}</span>
+            {Number(currentBook.originalPrice) > Number(currentBook.price) && (
               <span className="text-secondary text-decoration-line-through">
                 {formatPrice(currentBook.originalPrice)}
               </span>
             )}
           </div>
 
+          {/* Quantity Selector with inventory limits */}
+          <div className="mb-4">
+            <Form.Label className="fw-semibold small d-block mb-2">Chọn số lượng mua:</Form.Label>
+            <div className="d-flex align-items-center gap-3">
+              <InputGroup style={{ maxWidth: '140px' }}>
+                <Button
+                  variant="outline-secondary"
+                  disabled={quantity <= 1 || isOutOfStock}
+                  onClick={handleDecrease}
+                >
+                  -
+                </Button>
+                <Form.Control
+                  type="number"
+                  min="1"
+                  max={maxStock}
+                  value={quantity}
+                  onChange={handleQuantityChange}
+                  disabled={isOutOfStock}
+                  className="text-center fw-bold"
+                />
+                <Button
+                  variant="outline-secondary"
+                  disabled={quantity >= maxStock || isOutOfStock}
+                  onClick={handleIncrease}
+                >
+                  +
+                </Button>
+              </InputGroup>
+              <small className="text-muted">
+                {isOutOfStock ? 'Sản phẩm tạm thời hết hàng' : `(Tối đa ${maxStock} cuốn)`}
+              </small>
+            </div>
+          </div>
+
+          {/* Add to Cart & Buy Now Buttons */}
+          <div className="d-flex flex-wrap gap-2 mb-4">
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={isOutOfStock}
+              onClick={handleAddToCart}
+              className="px-4 fw-semibold d-inline-flex align-items-center gap-2"
+              style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
+            >
+              <span>🛒</span>
+              <span>Thêm vào giỏ hàng</span>
+            </Button>
+            <Button
+              variant="outline-primary"
+              size="lg"
+              disabled={isOutOfStock}
+              onClick={handleBuyNow}
+              className="px-4 fw-semibold"
+            >
+              Mua ngay
+            </Button>
+          </div>
+
           <hr />
 
           <h2 className="h5 fw-bold">Mô tả sách</h2>
-
-          <p className="text-secondary">
-            {currentBook.description ||
-              'Chưa có mô tả cho cuốn sách này.'}
+          <p className="text-secondary" style={{ lineHeight: '1.7' }}>
+            {currentBook.description || 'Chưa có mô tả cho cuốn sách này.'}
           </p>
         </Col>
       </Row>
