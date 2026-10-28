@@ -55,13 +55,10 @@ const Footer = () => {
                 <strong>Học phần:</strong> FER202 — Front-End Web Development with ReactJS
               </li>
               <li>
-                <strong>Tổ chức:</strong> Đại học FPT — Phân hiệu Cần Thơ
+                <strong>Học kỳ:</strong> Fall 2026 • SE2002
               </li>
               <li>
-                <strong>Học kỳ:</strong> Fall 2026 • Lớp SE18
-              </li>
-              <li>
-                <strong>Nhóm phát triển:</strong> Nhóm 5 thành viên (Leader: HaoTNT)
+                <strong>Nhóm 1</strong> 
               </li>
             </ul>
           </Col>

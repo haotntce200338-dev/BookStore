@@ -5,61 +5,10 @@ import LoginPage from './features/auth/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import BookList from './features/books/BookList';
 import { logoutUser } from './features/auth/authSlice';
-import { Container, Card, Button, Badge } from 'react-bootstrap';
+import { Container, Card, Button } from 'react-bootstrap';
 import './App.css';
-
-// Temporary placeholder for Home page
-const HomePage = () => {
-  const dispatch = useDispatch();
-  const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
-
-  return (
-    <Container className="my-5 text-center">
-      <Card className="p-4 shadow-sm mx-auto" style={{ maxWidth: '600px' }}>
-        <h2 className="mb-3">📚 BookStore - Trang Chủ</h2>
-        {isAuthenticated ? (
-          <div>
-            <p className="mb-2">
-              Xin chào, <strong>{currentUser?.fullName || currentUser?.username}</strong>!
-            </p>
-            <p className="mb-3">
-              Vai trò hiện tại:{' '}
-              <Badge bg={currentUser?.role === 'admin' ? 'danger' : 'success'}>
-                {currentUser?.role}
-              </Badge>
-            </p>
-            <div className="d-flex justify-content-center gap-2 flex-wrap">
-              {currentUser?.role === 'admin' ? (
-                <Button variant="primary" size="sm" href="/admin/books">
-                  Đến Trang Quản Trị (Admin)
-                </Button>
-              ) : (
-                <span className="text-muted small d-block w-100 mb-2">
-                  (Thử gõ <code>/admin/books</code> trên thanh địa chỉ trình duyệt để kiểm tra tính năng chặn phân quyền)
-                </span>
-              )}
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={() => dispatch(logoutUser())}
-              >
-                Đăng xuất
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <p className="text-muted mb-3">Bạn chưa đăng nhập vào hệ thống.</p>
-            <Button variant="primary" href="/login">
-              Đến trang Đăng nhập
-            </Button>
-          </div>
-        )}
-      </Card>
-    </Container>
-  );
-};
 
 // Temporary placeholder for Admin Books management
 const AdminBooksPlaceholder = () => {
@@ -100,7 +49,10 @@ function App() {
         {/* Main content expands to fill available vertical space */}
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            {/* Public books catalog homepage (HaoTNT) */}
+            <Route path="/" element={<BookList />} />
+
+            {/* Authentication route */}
             <Route path="/login" element={<LoginPage />} />
 
             {/* Protected Admin routes: Restricted to 'admin' role */}
