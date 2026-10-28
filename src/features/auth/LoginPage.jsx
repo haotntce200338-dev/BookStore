@@ -1,18 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Form,
-  Button,
-  Alert,
-  Spinner,
-  Badge,
-} from 'react-bootstrap';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Badge, InputGroup } from 'react-bootstrap';
 import { loginUser, clearAuthError } from './authSlice';
+
+const MALICIOUS_REGEX = /<[^>]*>|javascript:|data:\s*text\/html|on\w+\s*=/i;
 
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -32,6 +24,7 @@ const LoginPage = () => {
     username: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // Redirect safely according to user role
   useEffect(() => {
@@ -75,11 +68,18 @@ const LoginPage = () => {
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.username.trim()) {
+    const trimmedUsername = formData.username.trim();
+
+    if (!trimmedUsername) {
       errors.username = 'Vui lòng nhập tên đăng nhập.';
+    } else if (MALICIOUS_REGEX.test(trimmedUsername)) {
+      errors.username = 'Tên đăng nhập chứa ký tự hoặc đoạn mã không an toàn.';
     }
+
     if (!formData.password) {
       errors.password = 'Vui lòng nhập mật khẩu.';
+    } else if (MALICIOUS_REGEX.test(formData.password)) {
+      errors.password = 'Mật khẩu chứa ký tự hoặc đoạn mã không an toàn.';
     }
     return errors;
   };
@@ -164,19 +164,30 @@ const LoginPage = () => {
                   <Form.Label className="fw-semibold small">
                     Mật khẩu <span className="text-danger">*</span>
                   </Form.Label>
-                  <Form.Control
-                    type="password"
-                    name="password"
-                    placeholder="Nhập mật khẩu"
-                    value={formData.password}
-                    onChange={handleChange}
-                    isInvalid={!!validationErrors.password}
-                    disabled={loading}
-                    autoComplete="current-password"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.password}
-                  </Form.Control.Feedback>
+                  <InputGroup hasValidation>
+                    <Form.Control
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      placeholder="Nhập mật khẩu"
+                      value={formData.password}
+                      onChange={handleChange}
+                      isInvalid={!!validationErrors.password}
+                      disabled={loading}
+                      autoComplete="current-password"
+                    />
+                    <Button
+                      variant="outline-secondary"
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      disabled={loading}
+                      title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    >
+                      {showPassword ? '🙈' : '👁️'}
+                    </Button>
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.password}
+                    </Form.Control.Feedback>
+                  </InputGroup>
                 </Form.Group>
 
                 <Button
@@ -204,34 +215,25 @@ const LoginPage = () => {
                 </Button>
               </Form>
 
+              <div className="text-center mt-3">
+                <p className="text-muted small mb-0">
+                  Chưa có tài khoản?{' '}
+                  <Link to="/register" className="text-primary fw-semibold text-decoration-none">
+                    Đăng ký ngay
+                  </Link>
+                </p>
+              </div>
+
               <div className="mt-4 pt-3 border-top">
                 <p className="text-muted small fw-semibold mb-2">
                   Tài khoản thử nghiệm (Demo):
                 </p>
                 <div className="d-flex flex-wrap gap-2">
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    className="small"
-                    onClick={() => handleQuickFill('admin', '123')}
-                    disabled={loading}
-                  >
-                    <Badge bg="danger" className="me-1">
-                      Admin
-                    </Badge>
-                    admin / 123
+                  <Button variant="outline-secondary" size="sm" className="small" onClick={() => handleQuickFill('admin', '123')} disabled={loading}>
+                    <Badge bg="danger" className="me-1">Admin</Badge> admin / 123
                   </Button>
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    className="small"
-                    onClick={() => handleQuickFill('customer', '123')}
-                    disabled={loading}
-                  >
-                    <Badge bg="success" className="me-1">
-                      Customer
-                    </Badge>
-                    customer / 123
+                  <Button variant="outline-secondary" size="sm" className="small" onClick={() => handleQuickFill('customer', '123')} disabled={loading}>
+                    <Badge bg="success" className="me-1">Customer</Badge> customer / 123
                   </Button>
                 </div>
               </div>
