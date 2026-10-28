@@ -145,15 +145,26 @@ const Navbar = () => {
                 </NavDropdown.Item>
               </NavDropdown>
             ) : (
-              <Button
-                as={Link}
-                to="/login"
-                variant="primary"
-                size="sm"
-                className="px-3 fw-semibold"
-              >
-                Đăng nhập
-              </Button>
+              <div className="d-flex align-items-center gap-2">
+                <Button
+                  as={Link}
+                  to="/login"
+                  variant="outline-primary"
+                  size="sm"
+                  className="px-3 fw-semibold"
+                >
+                  Đăng nhập
+                </Button>
+                <Button
+                  as={Link}
+                  to="/register"
+                  variant="primary"
+                  size="sm"
+                  className="px-3 fw-semibold"
+                >
+                  Đăng ký
+                </Button>
+              </div>
             )}
           </Nav>
         </BsNavbar.Collapse>
