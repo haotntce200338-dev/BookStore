@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -7,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BookDetail from './features/books/BookDetail';
+import BookList from './features/books/BookList'; // Added: View Admin Books List
 import { logoutUser } from './features/auth/authSlice';
 import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
@@ -92,6 +94,7 @@ const HomePage = () => {
 };
 
 // Temporary placeholder for Admin Books management
+// Kept unchanged to preserve the original group code.
 const AdminBooksPlaceholder = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
@@ -140,10 +143,12 @@ function App() {
               path="/admin/books"
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminBooksPlaceholder />
+                  {/* Added: View Admin Books List */}
+                  <BookList />
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin"
               element={<Navigate to="/admin/books" replace />}
