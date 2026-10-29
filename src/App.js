@@ -6,9 +6,10 @@ import RegisterPage from './features/auth/RegisterPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import BookList from './features/books/BookList';
 import BookDetail from './features/books/BookDetail';
 import { logoutUser } from './features/auth/authSlice';
-import { Container, Card, Button, Badge } from 'react-bootstrap';
+import { Container, Card, Button } from 'react-bootstrap';
 import './App.css';
 
 // Temporary placeholder for Home page
@@ -103,6 +104,10 @@ function App() {
         {/* Main content expands to fill available vertical space */}
         <main className="main-content">
           <Routes>
+            {/* Public books catalog homepage (HaoTNT) */}
+            <Route path="/" element={<BookList />} />
+
+            {/* Authentication route */}
             <Route path="/" element={<HomePage />} />
             <Route path="/books/:id" element={<BookDetail />} />
             <Route path="/login" element={<LoginPage />} />

@@ -9,11 +9,32 @@ const ERROR_MESSAGE =
   'Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.';
 
 /**
+ * Fetch all active books from JSON Server.
+ * Used for the Public Books Catalog feature (HaoTNT).
+ *
+ * @returns {Promise<Array>} List of books returned by the API.
+ */
+export const fetchBooks = createAsyncThunk(
+  'books/fetchBooks',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(API_URL);
+      // Filter out soft-deleted books if any
+      return response.data.filter((book) => !book.isDeleted);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || ERROR_MESSAGE
+      );
+    }
+  }
+);
+
+/**
  * Fetch a book by its ID from JSON Server.
+ * Used for the View Book Details feature (TuanTA).
  *
  * @param {string} bookId - The ID of the book to fetch.
  * @returns {Promise<Object>} The book data returned by the API.
- *
  */
 export const fetchBookById = createAsyncThunk(
   'books/fetchBookById',
@@ -37,53 +58,58 @@ export const fetchBookById = createAsyncThunk(
 );
 
 /**
- * Create the Redux slice for the View Book Details feature.
- *
- * currentBook: the book currently being viewed.
- * bookLoading: whether the book request is in progress.
- * bookError: the API error message, if any.
- * bookNotFound: whether the requested book does not exist.
+ * Redux slice for the books module.
+ * Combines both Public Books Catalog (HaoTNT) and View Book Details (TuanTA).
  */
 const bookSlice = createSlice({
   name: 'books',
 
-  // Set the initial state of the feature.
   initialState: {
+    // Single book details state (TuanTA)
     currentBook: null,
     bookLoading: false,
     bookError: null,
     bookNotFound: false,
+
+    // Public books catalog state (HaoTNT)
+    books: [],
+    booksLoading: false,
+    booksError: null,
   },
 
-  // No synchronous reducers are needed for this feature.
   reducers: {},
 
-  // Handle the pending, fulfilled, and rejected states of the thunk.
   extraReducers: (builder) => {
     builder
+      // 1. fetchBooks - Public Catalog (HaoTNT)
+      .addCase(fetchBooks.pending, (state) => {
+        state.booksLoading = true;
+        state.booksError = null;
+      })
+      .addCase(fetchBooks.fulfilled, (state, action) => {
+        state.booksLoading = false;
+        state.books = action.payload;
+        state.booksError = null;
+      })
+      .addCase(fetchBooks.rejected, (state, action) => {
+        state.booksLoading = false;
+        state.booksError = action.payload || ERROR_MESSAGE;
+      })
 
-      // Run when the API request starts.
+      // 2. fetchBookById - Book Details (TuanTA)
       .addCase(fetchBookById.pending, (state) => {
         state.bookLoading = true;
         state.bookError = null;
         state.bookNotFound = false;
         state.currentBook = null;
       })
-
-      // Run when the API request succeeds.
       .addCase(fetchBookById.fulfilled, (state, action) => {
         state.bookLoading = false;
         state.currentBook = action.payload;
       })
-
-      // Run when the API request fails.
       .addCase(fetchBookById.rejected, (state, action) => {
         state.bookLoading = false;
-
-        // Check whether the API reported that the book was not found.
         state.bookNotFound = Boolean(action.payload?.notFound);
-
-        // Show an error message only for other kinds of failure.
         state.bookError = action.payload?.notFound
           ? null
           : action.payload?.message || ERROR_MESSAGE;
@@ -91,5 +117,4 @@ const bookSlice = createSlice({
   },
 });
 
-// Export the reducer so it can be registered in the Redux Store.
 export default bookSlice.reducer;

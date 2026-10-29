@@ -76,26 +76,6 @@ const Navbar = () => {
             )}
           </Nav>
 
-          {/* Quick search form */}
-          <Form
-            onSubmit={handleSearchSubmit}
-            className="d-flex me-lg-3 my-2 my-lg-0"
-            style={{ maxWidth: '320px', width: '100%' }}
-          >
-            <Form.Control
-              type="search"
-              placeholder="Tìm kiếm sách theo tên..."
-              className="me-2"
-              size="sm"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              aria-label="Tìm kiếm sách"
-            />
-            <Button variant="outline-primary" size="sm" type="submit">
-              Tìm
-            </Button>
-          </Form>
-
           {/* Cart and user authentication section */}
           <Nav className="align-items-lg-center d-flex flex-row gap-2 mt-2 mt-lg-0">
             {/* Cart link button with count badge */}

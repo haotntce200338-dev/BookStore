@@ -1,4 +1,6 @@
-
+/* ==========================================================================
+   BookStore Global CSS & Layout (FER202)
+   ========================================================================== */
 
 /* Flexbox layout container to keep footer stuck to the bottom (Sticky Footer) */
 .app-container {
@@ -19,4 +21,56 @@
 
 .hover-primary:hover {
   color: #0d6efd !important;
+}
+
+/* ==========================================================================
+   Book Card & Grid Specifications (guidelines.md Section 4.1)
+   ========================================================================== */
+
+/* Book card with subtle elevation and hover lift */
+.book-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Fixed cover image aspect ratio: 260px height, object-fit cover to prevent distortion */
+.book-card-img {
+  height: 260px;
+  width: 100%;
+  object-fit: cover;
+  background-color: #f1f3f5;
+  transition: opacity 0.2s ease;
+}
+
+/* Limit book title to a maximum of 2 lines */
+.book-title-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 48px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Current selling price: mandatory red (#DC3545) and bold */
+.book-price-current {
+  color: #dc3545;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+/* Struck-through original price in muted gray */
+.book-price-original {
+  color: #adb5bd;
+  text-decoration: line-through;
+  font-size: 0.9rem;
 }
