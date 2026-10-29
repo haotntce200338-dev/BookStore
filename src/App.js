@@ -60,33 +60,6 @@ const HomePage = () => {
         )}
       </Card>
 
-      {/* Quick links to test Add Book to Cart */}
-      <Card className="p-4 shadow-sm mx-auto" style={{ maxWidth: '600px' }}>
-        <h5 className="fw-bold mb-3 text-start">🛒 Thử nghiệm chức năng "Add Book to Cart"</h5>
-        <p className="text-muted small text-start mb-3">
-          Nhấp vào sách bên dưới để chuyển đến màn hình chi tiết và thử nghiệm chọn số lượng, thêm vào giỏ hàng:
-        </p>
-        <div className="d-flex flex-column gap-2">
-          <Button
-            as={Link}
-            to="/books/b-101"
-            variant="outline-primary"
-            className="d-flex justify-content-between align-items-center text-decoration-none"
-          >
-            <span>📖 Học ReactJS Toàn Tập (Còn hàng: 35)</span>
-            <span className="badge bg-primary">Xem chi tiết & Thêm giỏ →</span>
-          </Button>
-          <Button
-            as={Link}
-            to="/books/b-102"
-            variant="outline-primary"
-            className="d-flex justify-content-between align-items-center text-decoration-none"
-          >
-            <span>📖 Nhà Giả Kim (Còn hàng: 50)</span>
-            <span className="badge bg-primary">Xem chi tiết & Thêm giỏ →</span>
-          </Button>
-        </div>
-      </Card>
     </Container>
   );
 };
