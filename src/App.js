@@ -9,7 +9,7 @@ import Footer from './components/Footer';
 import BookList from './features/books/BookList';
 import BookDetail from './features/books/BookDetail';
 import { logoutUser } from './features/auth/authSlice';
-import { Container, Card, Button } from 'react-bootstrap';
+import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
 
 // Temporary placeholder for Home page
@@ -66,6 +66,7 @@ const HomePage = () => {
 };
 
 // Temporary placeholder for Admin Books management
+// eslint-disable-next-line no-unused-vars
 const AdminBooksPlaceholder = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
@@ -105,10 +106,10 @@ function App() {
         <main className="main-content">
           <Routes>
             {/* Public books catalog homepage (HaoTNT) */}
-            <Route path="/" element={<BookList />} />
+            <Route path="/" element={<BookList mode="catalog" />} />
 
             {/* Authentication route */}
-            <Route path="/" element={<HomePage />} />
+            <Route path="/home" element={<HomePage />} />
             <Route path="/books/:id" element={<BookDetail />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -118,7 +119,7 @@ function App() {
               path="/admin/books"
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminBooksPlaceholder />
+                  <BookList mode="admin" />
                 </ProtectedRoute>
               }
             />
