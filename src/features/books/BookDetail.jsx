@@ -21,6 +21,8 @@ import { addToCart } from '../cart/cartSlice';
 
 const NO_COVER = 'https://placehold.co/400x560?text=No+Cover';
 
+// Formats the book price into Vietnamese currency.
+// Returns a default message when the price is invalid.
 function formatPrice(price) {
   if (price === null || price === undefined || !Number.isFinite(Number(price))) {
     return 'Chưa cập nhật';
@@ -28,6 +30,7 @@ function formatPrice(price) {
   return Number(price).toLocaleString('vi-VN') + ' đ';
 }
 
+// Displays book details and handles loading, error, and not-found states.
 function BookDetail() {
   const { id } = useParams();
   const dispatch = useDispatch();
@@ -41,6 +44,8 @@ function BookDetail() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Fetches the book details when the page opens or the book ID changes.
+  // Resets the quantity when displaying a different book.
   useEffect(() => {
     setQuantity(1);
     dispatch(fetchBookById(id));
