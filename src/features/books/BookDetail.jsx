@@ -17,6 +17,7 @@ import {
 } from 'react-bootstrap';
 
 import { fetchBookById } from './bookSlice';
+import RelatedBooks from './RelatedBooks';
 import { addToCart } from '../cart/cartSlice';
 
 const NO_COVER = 'https://placehold.co/400x560?text=No+Cover';
@@ -245,6 +246,12 @@ function BookDetail() {
           </p>
         </Col>
       </Row>
+
+      {/* Display related books from the same category. */}
+      <RelatedBooks
+        categoryId={currentBook.categoryId}
+        currentBookId={currentBook.id}
+      />
     </Container>
   );
 }

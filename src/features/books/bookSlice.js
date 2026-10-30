@@ -58,8 +58,45 @@ export const fetchBookById = createAsyncThunk(
 );
 
 /**
+ * Fetches related books from the same category.
+ * Excludes the current book and deleted books.
+ *
+ * @param {Object} params - Parameters used to find related books.
+ * @param {string} params.categoryId - The category ID of the current book.
+ * @param {string} params.currentBookId - The ID of the current book.
+ * @returns {Promise<Array>} A list of related books.
+ */
+export const fetchRelatedBooks = createAsyncThunk(
+  'books/fetchRelatedBooks',
+  async ({ categoryId, currentBookId }, { rejectWithValue }) => {
+    try {
+      // Get books that belong to the same category.
+      const response = await axios.get(API_URL, {
+        params: {
+          categoryId: categoryId,
+        },
+      });
+
+      // Exclude the current book and deleted books.
+      const relatedBooks = response.data.filter(
+        (book) =>
+          !book.isDeleted &&
+          String(book.id) !== String(currentBookId)
+      );
+
+      // Return up to 4 related books.
+      return relatedBooks.slice(0, 4);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || ERROR_MESSAGE
+      );
+    }
+  }
+);
+
+/**
  * Redux slice for the books module.
- * Combines both Public Books Catalog (HaoTNT) and View Book Details (TuanTA).
+ * Combines both Public Books Catalog (HaoTNT) and View Book Details, View Related Books (TuanTA).
  */
 const bookSlice = createSlice({
   name: 'books',
@@ -70,6 +107,11 @@ const bookSlice = createSlice({
     bookLoading: false,
     bookError: null,
     bookNotFound: false,
+
+    // Related books state (TuanTA)
+    relatedBooks: [],
+    relatedLoading: false,
+    relatedError: null,
 
     // Public books catalog state (HaoTNT)
     books: [],
@@ -113,6 +155,21 @@ const bookSlice = createSlice({
         state.bookError = action.payload?.notFound
           ? null
           : action.payload?.message || ERROR_MESSAGE;
+      })
+
+      // 3. fetchRelatedBooks - Related Books (TuanTA)
+      .addCase(fetchRelatedBooks.pending, (state) => {
+        state.relatedLoading = true;
+        state.relatedError = null;
+        state.relatedBooks = [];
+      })
+      .addCase(fetchRelatedBooks.fulfilled, (state, action) => {
+        state.relatedLoading = false;
+        state.relatedBooks = action.payload;
+      })
+      .addCase(fetchRelatedBooks.rejected, (state, action) => {
+        state.relatedLoading = false;
+        state.relatedError = action.payload || ERROR_MESSAGE;
       });
   },
 });
