@@ -1,11 +1,11 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 /**
  * Load initial cart items from localStorage if available.
  */
 const loadInitialCart = () => {
   try {
-    const saved = localStorage.getItem('cartItems');
+    const saved = localStorage.getItem("cartItems");
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
@@ -13,7 +13,7 @@ const loadInitialCart = () => {
       }
     }
   } catch (error) {
-    console.error('Failed to parse cartItems from localStorage:', error);
+    console.error("Failed to parse cartItems from localStorage:", error);
   }
   return [];
 };
@@ -24,11 +24,12 @@ const loadInitialCart = () => {
 const calculateTotals = (items) => {
   const totalQuantity = items.reduce(
     (sum, item) => sum + (Number(item.quantity) || 0),
-    0
+    0,
   );
   const totalAmount = items.reduce(
-    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
-    0
+    (sum, item) =>
+      sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+    0,
   );
   return { totalQuantity, totalAmount };
 };
@@ -44,7 +45,7 @@ const initialState = {
 };
 
 const cartSlice = createSlice({
-  name: 'cart',
+  name: "cart",
   initialState,
   reducers: {
     /**
@@ -62,7 +63,7 @@ const cartSlice = createSlice({
       if (maxStock <= 0) return;
 
       const existingItem = state.items.find(
-        (item) => String(item.id) === String(book.id)
+        (item) => String(item.id) === String(book.id),
       );
 
       if (existingItem) {
@@ -74,9 +75,10 @@ const cartSlice = createSlice({
         state.items.push({
           id: book.id,
           title: book.title,
+          author: book.author || "",
           price: Number(book.price) || 0,
           originalPrice: book.originalPrice ? Number(book.originalPrice) : null,
-          image: book.image || '',
+          image: book.image || "",
           stock: maxStock,
           quantity: Math.min(requestedQty, maxStock),
         });
@@ -88,9 +90,9 @@ const cartSlice = createSlice({
       state.totalAmount = totals.totalAmount;
 
       try {
-        localStorage.setItem('cartItems', JSON.stringify(state.items));
+        localStorage.setItem("cartItems", JSON.stringify(state.items));
       } catch (err) {
-        console.error('Failed to save cartItems to localStorage:', err);
+        console.error("Failed to save cartItems to localStorage:", err);
       }
     },
 
@@ -108,7 +110,11 @@ const cartSlice = createSlice({
         state.totalQuantity = totals.totalQuantity;
         state.totalAmount = totals.totalAmount;
 
-        localStorage.setItem('cartItems', JSON.stringify(state.items));
+        try {
+          localStorage.setItem("cartItems", JSON.stringify(state.items));
+        } catch (err) {
+          console.error("Failed to save cartItems to localStorage:", err);
+        }
       }
     },
 
@@ -118,14 +124,18 @@ const cartSlice = createSlice({
     removeFromCart: (state, action) => {
       const bookId = action.payload;
       state.items = state.items.filter(
-        (item) => String(item.id) !== String(bookId)
+        (item) => String(item.id) !== String(bookId),
       );
 
       const totals = calculateTotals(state.items);
       state.totalQuantity = totals.totalQuantity;
       state.totalAmount = totals.totalAmount;
 
-      localStorage.setItem('cartItems', JSON.stringify(state.items));
+      try {
+        localStorage.setItem("cartItems", JSON.stringify(state.items));
+      } catch (err) {
+        console.error("Failed to save cartItems to localStorage:", err);
+      }
     },
 
     /**
@@ -135,7 +145,11 @@ const cartSlice = createSlice({
       state.items = [];
       state.totalQuantity = 0;
       state.totalAmount = 0;
-      localStorage.removeItem('cartItems');
+      try {
+        localStorage.removeItem("cartItems");
+      } catch (err) {
+        console.error("Failed to remove cartItems from localStorage:", err);
+      }
     },
   },
 });
