@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchBooks } from './bookSlice';
 import BookCard from './BookCard';
 import BookFormModal from './BookFormModal';
+import { addToCart } from '../cart/cartSlice';
 
 const BookList = ({ mode = 'catalog' }) => {
   const dispatch = useDispatch();
@@ -24,6 +25,7 @@ const BookList = ({ mode = 'catalog' }) => {
   }, [dispatch]);
 
   const handleAddToCart = (book) => {
+    dispatch(addToCart({ book, quantity: 1 }));
     setToastMessage(`Đã thêm "${book.title}" vào giỏ hàng.`);
     setShowToast(true);
   };
