@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import LoginPage from './features/auth/LoginPage';
@@ -7,10 +7,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BookList from './features/books/BookList';
-import BookDetail from './features/books/BookDetail';
 import { logoutUser } from './features/auth/authSlice';
 import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
+
+const BookDetail = React.lazy(
+  () => import('./features/books/BookDetail')
+);
 
 // Temporary placeholder for Home page
 const HomePage = () => {
@@ -110,7 +113,21 @@ function App() {
 
             {/* Authentication route */}
             <Route path="/home" element={<HomePage />} />
-            <Route path="/books/:id" element={<BookDetail />} />
+            {/* Route for viewing book details with lazy loading. */}
+            <Route
+              path="/books/:id"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="text-center my-5">
+                      Loading book details...
+                    </div>
+                  }
+                >
+                  <BookDetail />
+                </Suspense>
+              }
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
