@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Navbar as BsNavbar,
   Container,
@@ -17,12 +17,10 @@ const Navbar = () => {
 
   // Read user session from Redux auth slice
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
+  const isAdmin = currentUser?.role === 'admin';
 
   // Read cart quantity directly from cart slice (defaults to 0 if not mounted yet)
   const cartTotalQuantity = useSelector((state) => state.cart?.totalQuantity || 0);
-
-  // eslint-disable-next-line no-unused-vars
-  const [keyword, setKeyword] = useState('');
 
   // Handle user logout
   const handleLogout = () => {
@@ -52,16 +50,23 @@ const Navbar = () => {
         <BsNavbar.Toggle aria-controls="main-navbar-nav" />
 
         <BsNavbar.Collapse id="main-navbar-nav">
-          {/* Admin links displayed only for admin accounts */}
+          {/* Navigation links based on Role */}
           <Nav className="me-auto mb-2 mb-lg-0 align-items-lg-center">
-            {currentUser?.role === 'admin' && (
+            {isAdmin ? (
               <>
+                <Nav.Link
+                  as={Link}
+                  to="/admin/dashboard"
+                  className="fw-semibold px-2 text-danger"
+                >
+                  📊 Bảng điều khiển
+                </Nav.Link>
                 <Nav.Link
                   as={Link}
                   to="/admin/books"
                   className="fw-semibold px-2 text-danger"
                 >
-                  📚 Quản lý sách
+                  📚 Quản lý kho sách
                 </Nav.Link>
                 <Nav.Link
                   as={Link}
@@ -71,35 +76,54 @@ const Navbar = () => {
                   🏷️ Quản lý thể loại
                 </Nav.Link>
               </>
+            ) : (
+              <>
+                <Nav.Link as={Link} to="/" className="fw-semibold px-2 text-dark">
+                  Trang chủ
+                </Nav.Link>
+              </>
             )}
           </Nav>
 
-          {/* Cart and user authentication section */}
+          {/* Action section: Cart (Customer only) and User Authentication */}
           <Nav className="align-items-lg-center d-flex flex-row gap-2 mt-2 mt-lg-0">
-            {/* Cart link button with count badge */}
-            <Button
-              as={Link}
-              to="/cart"
-              variant="light"
-              size="sm"
-              className="position-relative border d-inline-flex align-items-center px-3 py-1 me-2"
-              title="Xem giỏ hàng"
-            >
-              <span className="me-1 fs-6">🛒</span>
-              <span className="d-none d-sm-inline small fw-semibold text-dark">
-                Giỏ hàng
-              </span>
-              {cartTotalQuantity > 0 && (
-                <Badge
-                  pill
-                  bg="danger"
-                  className="position-absolute top-0 start-100 translate-middle shadow-sm"
-                  style={{ fontSize: '0.7rem' }}
-                >
-                  {cartTotalQuantity}
-                </Badge>
-              )}
-            </Button>
+            {/* Cart button: visible to guests and customers only */}
+            {!isAdmin ? (
+              <Button
+                as={Link}
+                to="/cart"
+                variant="light"
+                size="sm"
+                className="position-relative border d-inline-flex align-items-center px-3 py-1 me-2 shadow-sm"
+                title="Xem giỏ hàng"
+              >
+                <span className="me-1 fs-6">🛒</span>
+                <span className="d-none d-sm-inline small fw-semibold text-dark">
+                  Giỏ hàng
+                </span>
+                {cartTotalQuantity > 0 && (
+                  <Badge
+                    pill
+                    bg="danger"
+                    className="position-absolute top-0 start-100 translate-middle shadow-sm"
+                    style={{ fontSize: '0.7rem' }}
+                  >
+                    {cartTotalQuantity}
+                  </Badge>
+                )}
+              </Button>
+            ) : (
+              <Button
+                as={Link}
+                to="/admin/dashboard"
+                variant="outline-danger"
+                size="sm"
+                className="d-inline-flex align-items-center px-3 py-1 me-2 fw-semibold"
+                title="Trang quản trị"
+              >
+                🛡️ Cổng Quản Trị
+              </Button>
+            )}
 
             {/* User session dropdown or login button */}
             {isAuthenticated && currentUser ? (
@@ -112,7 +136,7 @@ const Navbar = () => {
                       {currentUser.fullName || currentUser.username}
                     </span>
                     <Badge
-                      bg={currentUser.role === 'admin' ? 'danger' : 'success'}
+                      bg={isAdmin ? 'danger' : 'success'}
                       className="ms-2 text-uppercase"
                       style={{ fontSize: '0.65rem' }}
                     >
@@ -123,16 +147,26 @@ const Navbar = () => {
                 id="user-account-dropdown"
               >
                 <NavDropdown.Header className="small text-muted">
-                  Tài khoản: <strong>{currentUser.username}</strong>
+                  Tài khoản: <strong>{currentUser.username}</strong> ({currentUser.role})
                 </NavDropdown.Header>
 
-                {currentUser.role === 'admin' && (
+                {isAdmin ? (
                   <>
+                    <NavDropdown.Item as={Link} to="/admin/dashboard">
+                      📊 Bảng điều khiển (Dashboard)
+                    </NavDropdown.Item>
                     <NavDropdown.Item as={Link} to="/admin/books">
-                      📚 Quản trị sách
+                      📚 Quản lý kho sách
                     </NavDropdown.Item>
                     <NavDropdown.Item as={Link} to="/admin/categories">
                       🏷️ Quản trị thể loại
+                    </NavDropdown.Item>
+                    <NavDropdown.Divider />
+                  </>
+                ) : (
+                  <>
+                    <NavDropdown.Item as={Link} to="/cart">
+                      🛒 Giỏ hàng của tôi
                     </NavDropdown.Item>
                     <NavDropdown.Divider />
                   </>

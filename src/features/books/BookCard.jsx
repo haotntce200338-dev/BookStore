@@ -1,12 +1,16 @@
 import React from 'react';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 // High-resolution fallback cover when the image fails to load
 const DEFAULT_BOOK_COVER =
   'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80';
 
 const BookCard = ({ book, onAddToCart }) => {
+  const { currentUser } = useSelector((state) => state.auth);
+  const isAdmin = currentUser?.role === 'admin';
+
   const isOutOfStock = Number(book.stock) <= 0;
 
   // Handle broken image links gracefully
@@ -73,7 +77,7 @@ const BookCard = ({ book, onAddToCart }) => {
             )}
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons: Role-based actions (Customer vs Admin) */}
           <div className="d-grid gap-2">
             <Button
               as={Link}
@@ -84,16 +88,31 @@ const BookCard = ({ book, onAddToCart }) => {
             >
               Xem chi tiết
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="fw-semibold d-flex align-items-center justify-content-center gap-1"
-              disabled={isOutOfStock}
-              onClick={() => onAddToCart && onAddToCart(book)}
-            >
-              <span>🛒</span>
-              <span>{isOutOfStock ? 'Tạm hết hàng' : 'Thêm giỏ hàng'}</span>
-            </Button>
+
+            {!isAdmin ? (
+              <Button
+                variant="primary"
+                size="sm"
+                className="fw-semibold d-flex align-items-center justify-content-center gap-1"
+                disabled={isOutOfStock}
+                onClick={() => onAddToCart && onAddToCart(book)}
+              >
+                <span>🛒</span>
+                <span>{isOutOfStock ? 'Tạm hết hàng' : 'Thêm giỏ hàng'}</span>
+              </Button>
+            ) : (
+              <Button
+                as={Link}
+                to="/admin/books"
+                variant="outline-danger"
+                size="sm"
+                className="fw-semibold d-flex align-items-center justify-content-center gap-1"
+                title="Quản lý sách trong kho"
+              >
+                <span>✏️</span>
+                <span>Quản lý kho (Admin)</span>
+              </Button>
+            )}
           </div>
         </div>
       </Card.Body>
@@ -102,4 +121,3 @@ const BookCard = ({ book, onAddToCart }) => {
 };
 
 export default BookCard;
-
