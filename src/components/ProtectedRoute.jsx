@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, useLocation, Link, Outlet } from 'react-router-dom';
-import { Container, Card, Button, Badge, Alert } from 'react-bootstrap';
+import { Container, Card, Button, Badge } from 'react-bootstrap';
 import { logoutUser } from '../features/auth/authSlice';
 
 /**
@@ -49,15 +49,14 @@ const ProtectedRoute = ({ allowedRoles = ['admin'], children }) => {
                 <p className="text-muted mb-3">
                   Tài khoản hiện tại:{' '}
                   <strong>{currentUser.fullName || currentUser.username}</strong>{' '}
-                  <Badge bg="secondary" className="ms-1 text-uppercase">
-                    {userRole || 'customer'}
-                  </Badge>
+                  <Badge bg="secondary">{userRole}</Badge>
                 </p>
-                <Alert variant="warning" className="text-start small mb-4">
-                  <strong>Cảnh báo phân quyền:</strong> Bạn đang đăng nhập với tư cách{' '}
-                  <strong>{userRole}</strong>, trong khi khu vực này chỉ dành riêng cho{' '}
-                  <strong>{allowedRoles.join(', ')}</strong>. Hệ thống đã chặn hành vi tự ý thay đổi đường dẫn trên thanh địa chỉ.
-                </Alert>
+                <p className="text-muted small mb-4">
+                  Khu vực này được bảo mật và chỉ dành riêng cho tài khoản có quyền{' '}
+                  <strong>{allowedRoles.join(', ')}</strong>. Vui lòng quay lại
+                  trang chủ hoặc đăng nhập với tài khoản có thẩm quyền.
+                </p>
+
                 <div className="d-flex justify-content-center gap-2 flex-wrap">
                   <Button as={Link} to="/" variant="primary">
                     Về Trang Chủ
@@ -66,7 +65,7 @@ const ProtectedRoute = ({ allowedRoles = ['admin'], children }) => {
                     variant="outline-danger"
                     onClick={() => dispatch(logoutUser())}
                   >
-                    Đăng xuất tài khoản này
+                    Đăng xuất tài khoản
                   </Button>
                 </div>
               </Card.Body>
@@ -77,7 +76,53 @@ const ProtectedRoute = ({ allowedRoles = ['admin'], children }) => {
     );
   }
 
-  // Trường hợp 3: Hợp lệ -> cho phép truy cập
+  // Trường hợp 3: Hợp lệ -> hiển thị nội dung được bảo vệ
+  return children ? children : <Outlet />;
+};
+
+/**
+ * CustomerOnlyRoute:
+ * Chặn tài khoản 'admin' truy cập vào các trang giỏ hàng, thanh toán.
+ * Khách vãng lai (chưa đăng nhập) hoặc khách hàng (role 'customer') vẫn được phép vào.
+ */
+export const CustomerOnlyRoute = ({ children }) => {
+  const { currentUser } = useSelector((state) => state.auth);
+
+  if (currentUser?.role === 'admin') {
+    return (
+      <Container className="my-5">
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-8 col-lg-6">
+            <Card className="border-warning shadow-sm text-center">
+              <Card.Header className="bg-warning text-dark py-3">
+                <h5 className="mb-0 fw-bold">🛡️ Thông báo dành cho Quản trị viên</h5>
+              </Card.Header>
+              <Card.Body className="p-4">
+                <div className="my-3" style={{ fontSize: '48px' }}>
+                  🛒❌
+                </div>
+                <h4 className="fw-bold text-dark mb-2">
+                  Tài khoản Admin không thể đặt hàng
+                </h4>
+                <p className="text-muted mb-4">
+                  Bạn đang đăng nhập với tư cách Quản trị viên. Chức năng giỏ hàng và đặt hàng chỉ dành cho Khách hàng. Vui lòng sử dụng Cổng Quản trị để quản lý cửa hàng.
+                </p>
+                <div className="d-flex justify-content-center gap-2">
+                  <Button as={Link} to="/admin/dashboard" variant="danger">
+                    Đến Bảng Điều Khiển
+                  </Button>
+                  <Button as={Link} to="/" variant="outline-secondary">
+                    Về Trang Chủ
+                  </Button>
+                </div>
+              </Card.Body>
+            </Card>
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
   return children ? children : <Outlet />;
 };
 

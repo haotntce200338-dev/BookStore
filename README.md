@@ -206,7 +206,7 @@ BookStore/
 │   ├── App.js                      # Root router configuration (React Router DOM)
 │   └── index.js                    # Application entry point (Redux Provider & Bootstrap)
 ├── db.json                         # Mock database source for JSON Server
-├── FRONTEND_GUIDELINES.md          # Team UI conventions and development standards
+├── guidelines.md          # Team UI conventions and development standards
 ├── package.json                    # Project metadata, dependencies, and scripts
 └── README.md                       # Main project documentation
 ```

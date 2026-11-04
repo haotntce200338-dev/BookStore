@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import bcrypt from 'bcryptjs';
 
 const API_BASE_URL = 'http://localhost:3001';
 
@@ -37,13 +36,6 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 // Helper to verify passwords against bcrypt hash or legacy plaintext
 const verifyPassword = (inputPassword, storedPassword) => {
   if (!inputPassword || !storedPassword) return false;
-  if (typeof storedPassword === 'string' && (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$'))) {
-    try {
-      return bcrypt.compareSync(inputPassword, storedPassword);
-    } catch {
-      return false;
-    }
-  }
   return inputPassword === storedPassword;
 };
 
@@ -118,13 +110,10 @@ export const registerUser = createAsyncThunk(
         return rejectWithValue('Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.');
       }
 
-      // Hash password using bcryptjs with 10 salt rounds
-      const hashedPassword = bcrypt.hashSync(password, 10);
-
       const newUser = {
         id: `u-${Date.now()}`,
         username: cleanUsername,
-        password: hashedPassword,
+        password: password,
         fullName: cleanFullName,
         role: 'customer',
         isDeleted: false,
