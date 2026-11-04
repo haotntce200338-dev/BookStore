@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BookList from './features/books/BookList';
 import CartPage from './features/cart/CartPage';
+import CategoryListPage from './features/categories/CategoryListPage';
 import { logoutUser } from './features/auth/authSlice';
 import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
@@ -38,9 +39,14 @@ const HomePage = () => {
             </p>
             <div className="d-flex justify-content-center gap-2 flex-wrap">
               {currentUser?.role === 'admin' ? (
-                <Button variant="primary" size="sm" as={Link} to="/admin/books">
-                  Đến Trang Quản Trị (Admin)
-                </Button>
+                <>
+                  <Button variant="primary" size="sm" as={Link} to="/admin/books">
+                    Quản Lý Sách
+                  </Button>
+                  <Button variant="outline-primary" size="sm" as={Link} to="/admin/categories">
+                    Quản Lý Thể Loại
+                  </Button>
+                </>
               ) : (
                 <span className="text-muted small d-block w-100 mb-2">
                   (Thử gõ <code>/admin/books</code> trên thanh địa chỉ trình duyệt để kiểm tra tính năng chặn phân quyền)
@@ -63,36 +69,6 @@ const HomePage = () => {
             </Button>
           </div>
         )}
-      </Card>
-
-    </Container>
-  );
-};
-
-// Temporary placeholder for Admin Books management
-// eslint-disable-next-line no-unused-vars
-const AdminBooksPlaceholder = () => {
-  const dispatch = useDispatch();
-  const { currentUser } = useSelector((state) => state.auth);
-
-  return (
-    <Container className="my-5 text-center">
-      <Card className="p-4 shadow-sm mx-auto border-danger" style={{ maxWidth: '600px' }}>
-        <h2 className="mb-3 text-danger">🛡️ Khu vực Quản trị Sách (Admin)</h2>
-        <p className="mb-2">
-          Xin chào Quản trị viên: <strong>{currentUser?.fullName}</strong> ({currentUser?.role})
-        </p>
-        <p className="text-muted small mb-4">
-          Đây là khu vực bảo mật chỉ dành riêng cho tài khoản có quyền Admin.
-        </p>
-        <div className="d-flex justify-content-center gap-2">
-          <Button variant="outline-secondary" as={Link} to="/">
-            Về Trang Chủ
-          </Button>
-          <Button variant="outline-danger" onClick={() => dispatch(logoutUser())}>
-            Đăng xuất
-          </Button>
-        </div>
       </Card>
     </Container>
   );
@@ -139,6 +115,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <BookList mode="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/categories"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <CategoryListPage />
                 </ProtectedRoute>
               }
             />

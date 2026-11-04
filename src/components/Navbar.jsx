@@ -3,7 +3,6 @@ import {
   Navbar as BsNavbar,
   Container,
   Nav,
-  Form,
   Button,
   Badge,
   NavDropdown,
@@ -22,18 +21,8 @@ const Navbar = () => {
   // Read cart quantity directly from cart slice (defaults to 0 if not mounted yet)
   const cartTotalQuantity = useSelector((state) => state.cart?.totalQuantity || 0);
 
+  // eslint-disable-next-line no-unused-vars
   const [keyword, setKeyword] = useState('');
-
-  // Handle book search submission from the navbar
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    const trimmed = keyword.trim();
-    if (trimmed) {
-      navigate(`/?search=${encodeURIComponent(trimmed)}`);
-    } else {
-      navigate('/');
-    }
-  };
 
   // Handle user logout
   const handleLogout = () => {
@@ -63,16 +52,25 @@ const Navbar = () => {
         <BsNavbar.Toggle aria-controls="main-navbar-nav" />
 
         <BsNavbar.Collapse id="main-navbar-nav">
-          {/* Admin link displayed only for admin accounts */}
+          {/* Admin links displayed only for admin accounts */}
           <Nav className="me-auto mb-2 mb-lg-0 align-items-lg-center">
             {currentUser?.role === 'admin' && (
-              <Nav.Link
-                as={Link}
-                to="/admin/books"
-                className="fw-semibold px-2 text-danger"
-              >
-                🛡️ Quản trị (Admin)
-              </Nav.Link>
+              <>
+                <Nav.Link
+                  as={Link}
+                  to="/admin/books"
+                  className="fw-semibold px-2 text-danger"
+                >
+                  📚 Quản lý sách
+                </Nav.Link>
+                <Nav.Link
+                  as={Link}
+                  to="/admin/categories"
+                  className="fw-semibold px-2 text-danger"
+                >
+                  🏷️ Quản lý thể loại
+                </Nav.Link>
+              </>
             )}
           </Nav>
 
@@ -131,7 +129,10 @@ const Navbar = () => {
                 {currentUser.role === 'admin' && (
                   <>
                     <NavDropdown.Item as={Link} to="/admin/books">
-                      🛡️ Quản trị sách
+                      📚 Quản trị sách
+                    </NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/admin/categories">
+                      🏷️ Quản trị thể loại
                     </NavDropdown.Item>
                     <NavDropdown.Divider />
                   </>
