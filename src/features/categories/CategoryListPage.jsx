@@ -1,12 +1,17 @@
-import React, { useEffect } from 'react';
-import { Container, Table, Spinner, Alert, Button, Badge } from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import { Container, Table, Spinner, Alert, Button, Badge, Toast, ToastContainer } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { fetchCategories } from './categorySlice';
+import CategoryFormModal from './CategoryFormModal';
 
 const CategoryListPage = () => {
   const dispatch = useDispatch();
   const { categories, loading, error } = useSelector((state) => state.categories);
+
+  const [showModal, setShowModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -14,8 +19,33 @@ const CategoryListPage = () => {
 
   const activeCategories = (categories || []).filter((cat) => !cat.isDeleted);
 
+  const handleCreateSuccess = (createdCategory) => {
+    setToastMessage(`Đã thêm thể loại "${createdCategory?.name || 'mới'}" thành công!`);
+    setShowToast(true);
+    dispatch(fetchCategories());
+  };
+
   return (
     <Container className="my-4">
+      {/* Toast Notification */}
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1080 }}>
+        <Toast
+          onClose={() => setShowToast(false)}
+          show={showToast}
+          delay={3000}
+          autohide
+          bg="success"
+        >
+          <Toast.Header>
+            <strong className="me-auto text-success">🏷️ Quản Lý Thể Loại</strong>
+            <small>Vừa xong</small>
+          </Toast.Header>
+          <Toast.Body className="text-white small fw-semibold">
+            {toastMessage}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
+
       {/* Page Header */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
         <div>
@@ -33,6 +63,15 @@ const CategoryListPage = () => {
           )}
           <Button as={Link} to="/admin/books" variant="outline-primary" size="sm">
             📚 Sang Quản lý Sách
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            className="fw-semibold"
+            style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
+            onClick={() => setShowModal(true)}
+          >
+            + Thêm thể loại mới
           </Button>
         </div>
       </div>
@@ -62,9 +101,12 @@ const CategoryListPage = () => {
         <Alert variant="info" className="text-center py-5 my-4 shadow-sm">
           <div className="fs-1 mb-2">🏷️</div>
           <Alert.Heading className="fs-5 fw-bold">Hiện chưa có thể loại sách nào</Alert.Heading>
-          <p className="text-muted small mb-0">
-            Hệ thống hiện tại chưa có dữ liệu thể loại sách để hiển thị.
+          <p className="text-muted small mb-3">
+            Hệ thống hiện tại chưa có dữ liệu thể loại sách để hiển thị. Hãy bắt đầu bằng việc tạo thể loại mới!
           </p>
+          <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
+            + Thêm thể loại đầu tiên
+          </Button>
         </Alert>
       )}
 
@@ -105,9 +147,15 @@ const CategoryListPage = () => {
           </tbody>
         </Table>
       )}
+
+      {/* Create Category Modal */}
+      <CategoryFormModal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </Container>
   );
 };
 
 export default CategoryListPage;
-

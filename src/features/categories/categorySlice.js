@@ -8,6 +8,12 @@ const API_URL = 'http://localhost:3001/categories';
 const ERROR_MESSAGE =
   'Đã có lỗi xảy ra khi tải dữ liệu thể loại. Vui lòng thử lại sau.';
 
+// Regex to block XSS and malicious script/HTML injection patterns
+const MALICIOUS_REGEX = /<[^>]*>|javascript:|data:\s*text\/html|vbscript:|on\w+\s*=|alert\(|eval\(|document\./i;
+
+// Regex for safe Category Name: Letters (with Vietnamese unicode accents), numbers, spaces, and safe punctuation (- & , . / ( ))
+const CATEGORY_NAME_SAFE_REGEX = /^[\p{L}\d\s\-&,./()]+$/u;
+
 /**
  * Fetch all active categories from JSON Server.
  * Filters out any soft-deleted categories.
@@ -27,10 +33,47 @@ export const fetchCategories = createAsyncThunk(
   }
 );
 
+/**
+ * Create a new category in JSON Server with anti-XSS validation.
+ */
+export const createCategory = createAsyncThunk(
+  'categories/createCategory',
+  async (categoryData, { rejectWithValue }) => {
+    try {
+      const cleanName = categoryData?.name?.trim() || '';
+      const cleanDesc = categoryData?.description?.trim() || '';
+
+      // Strict validation guard at Thunk level to block devtools / inspect manipulation
+      if (
+        !cleanName ||
+        cleanName.length < 2 ||
+        cleanName.length > 50 ||
+        MALICIOUS_REGEX.test(cleanName) ||
+        !CATEGORY_NAME_SAFE_REGEX.test(cleanName) ||
+        MALICIOUS_REGEX.test(cleanDesc) ||
+        cleanDesc.length > 250
+      ) {
+        return rejectWithValue(
+          'Dữ liệu gửi lên không hợp lệ hoặc chứa ký tự không an toàn (XSS).'
+        );
+      }
+
+      const response = await axios.post(API_URL, categoryData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Có lỗi xảy ra khi tạo thể loại mới. Vui lòng thử lại!'
+      );
+    }
+  }
+);
+
 const initialState = {
   categories: [],
   loading: false,
   error: null,
+  createLoading: false,
+  createError: null,
 };
 
 const categorySlice = createSlice({
@@ -39,6 +82,7 @@ const categorySlice = createSlice({
   reducers: {
     clearCategoryError: (state) => {
       state.error = null;
+      state.createError = null;
     },
   },
   extraReducers: (builder) => {
@@ -56,10 +100,23 @@ const categorySlice = createSlice({
       .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || ERROR_MESSAGE;
+      })
+      // createCategory lifecycle
+      .addCase(createCategory.pending, (state) => {
+        state.createLoading = true;
+        state.createError = null;
+      })
+      .addCase(createCategory.fulfilled, (state, action) => {
+        state.createLoading = false;
+        state.categories.push(action.payload);
+        state.createError = null;
+      })
+      .addCase(createCategory.rejected, (state, action) => {
+        state.createLoading = false;
+        state.createError = action.payload;
       });
   },
 });
 
 export const { clearCategoryError } = categorySlice.actions;
 export default categorySlice.reducer;
-
