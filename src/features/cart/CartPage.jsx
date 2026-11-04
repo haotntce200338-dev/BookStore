@@ -1,8 +1,8 @@
-import React from 'react';
-import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Container, Row, Col, Card, Button, Badge, Modal, Toast, ToastContainer } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { updateQuantity } from './cartSlice';
+import { updateQuantity, removeFromCart } from './cartSlice';
 import CartItemRow from './CartItemRow';
 import CartSummary from './CartSummary';
 
@@ -11,6 +11,18 @@ const CartPage = () => {
 
   // Read shopping cart data from Redux state
   const { items, totalQuantity, totalAmount } = useSelector((state) => state.cart);
+
+  // Modal confirmation state for removing an item
+  const [deleteModal, setDeleteModal] = useState({
+    show: false,
+    item: null,
+  });
+
+  // Toast feedback state
+  const [toastConfig, setToastConfig] = useState({
+    show: false,
+    message: '',
+  });
 
   // Handle quantity changes (minimum 1, maximum item stock)
   const handleQuantityChange = (bookId, newQuantity) => {
@@ -22,8 +34,56 @@ const CartPage = () => {
     dispatch(updateQuantity({ bookId, quantity: safeQty }));
   };
 
+  // Open modal to confirm removal
+  const handleOpenRemoveModal = (item) => {
+    setDeleteModal({
+      show: true,
+      item,
+    });
+  };
+
+  // Close confirmation modal
+  const handleCloseRemoveModal = () => {
+    setDeleteModal({
+      show: false,
+      item: null,
+    });
+  };
+
+  // Execute removal after user confirmation
+  const handleConfirmRemove = () => {
+    if (deleteModal.item) {
+      const removedTitle = deleteModal.item.title;
+      dispatch(removeFromCart(deleteModal.item.id));
+      setToastConfig({
+        show: true,
+        message: `Đã xóa cuốn "${removedTitle}" khỏi giỏ hàng.`,
+      });
+    }
+    handleCloseRemoveModal();
+  };
+
   return (
     <Container className="my-4">
+      {/* Toast Notification */}
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1080 }}>
+        <Toast
+          show={toastConfig.show}
+          onClose={() => setToastConfig((prev) => ({ ...prev, show: false }))}
+          delay={2500}
+          autohide
+          bg="success"
+        >
+          <Toast.Header>
+            <strong className="me-auto text-primary">🛒 Giỏ hàng BookStore</strong>
+            <small>Vừa xong</small>
+          </Toast.Header>
+          <Toast.Body className="text-white small fw-medium">
+            {toastConfig.message}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
+
       {/* Breadcrumb & Heading */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
@@ -81,8 +141,8 @@ const CartPage = () => {
               <Card.Header className="bg-light fw-bold py-3 d-none d-md-block">
                 <div className="row text-secondary small text-uppercase">
                   <div className="col-md-7">Sản phẩm</div>
-                  <div className="col-md-3 text-center">Số lượng</div>
-                  <div className="col-md-2 text-end">Số tiền</div>
+                  <div className="col-md-2 text-center">Số lượng</div>
+                  <div className="col-md-3 text-end">Số tiền & Thao tác</div>
                 </div>
               </Card.Header>
               <div className="cart-items-container">
@@ -91,6 +151,7 @@ const CartPage = () => {
                     key={item.id}
                     item={item}
                     onQuantityChange={handleQuantityChange}
+                    onRemoveRequest={handleOpenRemoveModal}
                   />
                 ))}
               </div>
@@ -106,6 +167,36 @@ const CartPage = () => {
           </Col>
         </Row>
       )}
+
+      {/* Remove Confirmation Modal (guidelines.md Section 4.3) */}
+      <Modal
+        show={deleteModal.show}
+        onHide={handleCloseRemoveModal}
+        centered
+        backdrop="static"
+        keyboard={true}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="fs-5 fw-bold text-danger d-flex align-items-center gap-2">
+            <span>⚠️</span>
+            <span>Xác nhận xóa sản phẩm</span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="mb-0">
+            Bạn có chắc chắn muốn xóa cuốn sách{' '}
+            <strong>"{deleteModal.item?.title}"</strong> khỏi giỏ hàng không?
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={handleCloseRemoveModal}>
+            Hủy
+          </Button>
+          <Button variant="danger" onClick={handleConfirmRemove}>
+            Xác nhận xóa
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };
