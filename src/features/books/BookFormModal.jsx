@@ -3,6 +3,7 @@ import { Modal, Button, Form, Alert, Row, Col, Spinner } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 const API_URL = 'http://localhost:3001/books';
+
 /**
  * Auto-generates the next sequential book code (e.g., "b-101", "b-102").
  * @param {Array} bookList - Existing books
@@ -30,8 +31,13 @@ export const generateNextBookCode = (bookList = [], defaultStart = 101) => {
   const maxNumber = Math.max(...existingNumbers);
   return `b-${maxNumber + 1}`;
 };
-const BookFormModal = ({ show, onHide, onSuccess }) => {
+
+const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null, ...props }) => {
   const { books } = useSelector((state) => state.books);
+  const categories = useSelector((state) => state.categories?.categories || []);
+
+  const isEditMode = Boolean(bookToEdit);
+
   const [formData, setFormData] = useState({
     title: '',
     author: '',
@@ -45,24 +51,57 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
   const [validated, setValidated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
-  // Generate next book code
+
+  // Generate next book code for create mode
   const nextBookCode = generateNextBookCode(books, 101);
+  const currentBookCode = isEditMode
+    ? (bookToEdit?.bookCode || bookToEdit?.id || '')
+    : nextBookCode;
+
   useEffect(() => {
     if (show) {
-      setFormData({
-        title: '',
-        author: '',
-        categoryName: '',
-        originalPrice: '',
-        price: '',
-        stock: '10',
-        image: '',
-        description: '',
-      });
+      if (bookToEdit) {
+        setFormData({
+          title: bookToEdit.title || '',
+          author: bookToEdit.author || '',
+          categoryName:
+            bookToEdit.category?.name ||
+            bookToEdit.categoryName ||
+            bookToEdit.categoryId ||
+            '',
+          originalPrice:
+            bookToEdit.originalPrice !== undefined &&
+            bookToEdit.originalPrice !== null
+              ? String(bookToEdit.originalPrice)
+              : '',
+          price:
+            bookToEdit.price !== undefined && bookToEdit.price !== null
+              ? String(bookToEdit.price)
+              : '',
+          stock:
+            bookToEdit.stock !== undefined && bookToEdit.stock !== null
+              ? String(bookToEdit.stock)
+              : '10',
+          image: bookToEdit.image || '',
+          description: bookToEdit.description || '',
+        });
+      } else {
+        setFormData({
+          title: '',
+          author: '',
+          categoryName: '',
+          originalPrice: '',
+          price: '',
+          stock: '10',
+          image: '',
+          description: '',
+        });
+      }
       setValidated(false);
       setErrorMessage(null);
     }
-  }, [show]);
+  }, [show, bookToEdit]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -70,6 +109,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
       [name]: value,
     }));
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -80,6 +120,63 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
     }
     setSubmitting(true);
     setErrorMessage(null);
+
+    // Chế độ Cập Nhật Thông Tin Sách (Update Book Details - Admin)
+    if (isEditMode) {
+      const matchedCategory = (categories || []).find(
+        (c) =>
+          c.name?.trim().toLowerCase() ===
+          formData.categoryName.trim().toLowerCase()
+      );
+      const categoryId = matchedCategory
+        ? matchedCategory.id
+        : bookToEdit?.categoryId;
+
+      const updatedBook = {
+        ...bookToEdit,
+        id: bookToEdit.id,
+        bookCode: bookToEdit.bookCode || bookToEdit.id,
+        title: formData.title.trim(),
+        author: formData.author.trim(),
+        categoryName:
+          formData.categoryName.trim() ||
+          bookToEdit.categoryName ||
+          'Chưa phân loại',
+        ...(categoryId ? { categoryId } : {}),
+        originalPrice:
+          formData.originalPrice !== ''
+            ? Number(formData.originalPrice)
+            : 0,
+        price: Number(formData.price) || 0,
+        stock: formData.stock !== '' ? Number(formData.stock) : 0,
+        image: formData.image.trim(),
+        description: formData.description.trim(),
+        isDeleted: bookToEdit.isDeleted ?? false,
+        createdAt: bookToEdit.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      try {
+        await axios.put(`${API_URL}/${bookToEdit.id}`, updatedBook);
+        setSubmitting(false);
+        if (onSuccess) {
+          onSuccess(updatedBook);
+        }
+        if (onHide) {
+          onHide();
+        }
+      } catch (error) {
+        console.error('Lỗi khi cập nhật thông tin sách:', error);
+        setSubmitting(false);
+        setErrorMessage(
+          error.response?.data?.message ||
+            'Có lỗi xảy ra khi cập nhật thông tin sách. Vui lòng thử lại!'
+        );
+      }
+      return;
+    }
+
+    // Chế độ Thêm Mới Sách (Create New Book)
     // Prepare payload with generated book code
     const newBook = {
       bookCode: nextBookCode,
@@ -111,11 +208,12 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
       );
     }
   };
+
   return (
     <Modal show={show} onHide={onHide} backdrop="static" centered size="lg">
       <Modal.Header closeButton>
         <Modal.Title className="fw-bold">
-          📚 Thêm Sách Mới Vào Hệ Thống
+          {isEditMode ? '✏️ Cập Nhật Thông Tin Sách' : '📚 Thêm Sách Mới Vào Hệ Thống'}
         </Modal.Title>
       </Modal.Header>
       <Form noValidate validated={validated} onSubmit={handleSubmit}>
@@ -126,19 +224,25 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
             </Alert>
           )}
           <Row className="g-3">
-            {/* Auto-generated Book Code */}
+            {/* Auto-generated / Fixed Book Code */}
             <Col md={6}>
               <Form.Group controlId="bookCode">
-                <Form.Label className="fw-semibold">Mã sách (Tự tăng):</Form.Label>
+                <Form.Label className="fw-semibold">Mã sách:</Form.Label>
                 <Form.Control
                   type="text"
-                  value={`${nextBookCode} (Tự động tạo)`}
+                  value={
+                    isEditMode
+                      ? `${currentBookCode} (Mã cố định)`
+                      : `${nextBookCode} (Tự động tạo)`
+                  }
                   disabled
                   readOnly
                   className="bg-light fw-bold text-primary"
                 />
                 <Form.Text className="text-muted">
-                  Quy tắc sinh mã: b-101, b-102, b-103...
+                  {isEditMode
+                    ? 'Mã sách không thể thay đổi.'
+                    : 'Quy tắc sinh mã: b-101, b-102, b-103...'}
                 </Form.Text>
               </Form.Group>
             </Col>
@@ -278,10 +382,10 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
             {submitting ? (
               <>
                 <Spinner as="span" animation="border" size="sm" role="status" className="me-2" />
-                Đang lưu...
+                {isEditMode ? 'Đang cập nhật...' : 'Đang lưu...'}
               </>
             ) : (
-              'Tạo sách mới'
+              isEditMode ? 'Lưu thay đổi' : 'Tạo sách mới'
             )}
           </Button>
         </Modal.Footer>
@@ -289,4 +393,5 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
     </Modal>
   );
 };
+
 export default BookFormModal;

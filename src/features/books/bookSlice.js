@@ -95,6 +95,32 @@ export const fetchRelatedBooks = createAsyncThunk(
 );
 
 /**
+ * Update book details in JSON Server.
+ * Used for the Update Book Details feature (Admin).
+ *
+ * @param {Object} bookData - The updated book object containing its id.
+ * @returns {Promise<Object>} The updated book data returned by the API.
+ */
+export const updateBook = createAsyncThunk(
+  'books/updateBook',
+  async (bookData, { rejectWithValue }) => {
+    try {
+      const bookId = bookData?.id || bookData?.bookId;
+      const payload = bookData?.bookData || bookData;
+      const response = await axios.put(`${API_URL}/${bookId}`, payload);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Đã có lỗi xảy ra khi cập nhật thông tin sách. Vui lòng thử lại sau.'
+      );
+    }
+  }
+);
+
+// Alias export for consistency with feature name
+export const updateBookDetails = updateBook;
+
+/**
  * Redux slice for the books module.
  * Combines both Public Books Catalog (HaoTNT) and View Book Details, View Related Books (TuanTA).
  */
@@ -170,6 +196,32 @@ const bookSlice = createSlice({
       .addCase(fetchRelatedBooks.rejected, (state, action) => {
         state.relatedLoading = false;
         state.relatedError = action.payload || ERROR_MESSAGE;
+      })
+
+      // 4. updateBook - Update Book Details (Admin)
+      .addCase(updateBook.pending, (state) => {
+        state.booksLoading = true;
+        state.booksError = null;
+      })
+      .addCase(updateBook.fulfilled, (state, action) => {
+        state.booksLoading = false;
+        state.booksError = null;
+        const updated = action.payload;
+        if (updated && updated.id) {
+          const index = state.books.findIndex(
+            (b) => String(b.id) === String(updated.id)
+          );
+          if (index !== -1) {
+            state.books[index] = updated;
+          }
+          if (state.currentBook && String(state.currentBook.id) === String(updated.id)) {
+            state.currentBook = updated;
+          }
+        }
+      })
+      .addCase(updateBook.rejected, (state, action) => {
+        state.booksLoading = false;
+        state.booksError = action.payload || ERROR_MESSAGE;
       });
   },
 });
