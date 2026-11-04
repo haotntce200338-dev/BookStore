@@ -1,13 +1,26 @@
 import React from 'react';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { updateQuantity } from './cartSlice';
 import CartItemRow from './CartItemRow';
 import CartSummary from './CartSummary';
 
 const CartPage = () => {
-  // Read shopping cart data strictly from Redux state
+  const dispatch = useDispatch();
+
+  // Read shopping cart data from Redux state
   const { items, totalQuantity, totalAmount } = useSelector((state) => state.cart);
+
+  // Handle quantity changes (minimum 1, maximum item stock)
+  const handleQuantityChange = (bookId, newQuantity) => {
+    const item = items.find((i) => String(i.id) === String(bookId));
+    if (!item) return;
+
+    // Constrain quantity within [1, item.stock]
+    const safeQty = Math.max(1, Math.min(newQuantity, item.stock));
+    dispatch(updateQuantity({ bookId, quantity: safeQty }));
+  };
 
   return (
     <Container className="my-4">
@@ -60,7 +73,7 @@ const CartPage = () => {
           </Card.Body>
         </Card>
       ) : (
-        /* Cart Content Grid (View Only) */
+        /* Cart Content Grid */
         <Row className="g-4">
           {/* Cart Items List */}
           <Col xs={12} lg={8}>
@@ -68,13 +81,17 @@ const CartPage = () => {
               <Card.Header className="bg-light fw-bold py-3 d-none d-md-block">
                 <div className="row text-secondary small text-uppercase">
                   <div className="col-md-7">Sản phẩm</div>
-                  <div className="col-md-2 text-center">Số lượng</div>
-                  <div className="col-md-3 text-end">Số tiền</div>
+                  <div className="col-md-3 text-center">Số lượng</div>
+                  <div className="col-md-2 text-end">Số tiền</div>
                 </div>
               </Card.Header>
               <div className="cart-items-container">
                 {items.map((item) => (
-                  <CartItemRow key={item.id} item={item} />
+                  <CartItemRow
+                    key={item.id}
+                    item={item}
+                    onQuantityChange={handleQuantityChange}
+                  />
                 ))}
               </div>
             </Card>
