@@ -76,30 +76,32 @@ const Navbar = () => {
 
           {/* Cart and user authentication section */}
           <Nav className="align-items-lg-center d-flex flex-row gap-2 mt-2 mt-lg-0">
-            {/* Cart link button with count badge */}
-            <Button
-              as={Link}
-              to="/cart"
-              variant="light"
-              size="sm"
-              className="position-relative border d-inline-flex align-items-center px-3 py-1 me-2"
-              title="Xem giỏ hàng"
-            >
-              <span className="me-1 fs-6">🛒</span>
-              <span className="d-none d-sm-inline small fw-semibold text-dark">
-                Giỏ hàng
-              </span>
-              {cartTotalQuantity > 0 && (
-                <Badge
-                  pill
-                  bg="danger"
-                  className="position-absolute top-0 start-100 translate-middle shadow-sm"
-                  style={{ fontSize: '0.7rem' }}
-                >
-                  {cartTotalQuantity}
-                </Badge>
-              )}
-            </Button>
+            {/* Cart link button with count badge (hidden for admin) */}
+            {currentUser?.role !== 'admin' && (
+              <Button
+                as={Link}
+                to="/cart"
+                variant="light"
+                size="sm"
+                className="position-relative border d-inline-flex align-items-center px-3 py-1 me-2"
+                title="Xem giỏ hàng"
+              >
+                <span className="me-1 fs-6">🛒</span>
+                <span className="d-none d-sm-inline small fw-semibold text-dark">
+                  Giỏ hàng
+                </span>
+                {cartTotalQuantity > 0 && (
+                  <Badge
+                    pill
+                    bg="danger"
+                    className="position-absolute top-0 start-100 translate-middle shadow-sm"
+                    style={{ fontSize: '0.7rem' }}
+                  >
+                    {cartTotalQuantity}
+                  </Badge>
+                )}
+              </Button>
+            )}
 
             {/* User session dropdown or login button */}
             {isAuthenticated && currentUser ? (
