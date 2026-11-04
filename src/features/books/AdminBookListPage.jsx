@@ -23,12 +23,31 @@ const AdminBookListPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
 
+  // Edit modal state (Update Book Details - Admin)
+  const [bookToEdit, setBookToEdit] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+
   useEffect(() => {
     dispatch(fetchBooks());
   }, [dispatch]);
 
   const handleCreateSuccess = () => {
     setCreateSuccess(true);
+    dispatch(fetchBooks());
+  };
+
+  // Handlers for Update Book Details
+  const handleEditBook = (book) => {
+    setBookToEdit(book);
+    setUpdateSuccess(false);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateSuccess = (updatedBook) => {
+    setUpdateSuccess(true);
+    setShowEditModal(false);
+    setBookToEdit(null);
     dispatch(fetchBooks());
   };
 
@@ -117,6 +136,13 @@ const AdminBookListPage = () => {
       {createSuccess && (
         <Alert variant="success" dismissible onClose={() => setCreateSuccess(false)}>
           Thêm sách mới vào kho thành công!
+        </Alert>
+      )}
+
+      {/* Update Success Alert */}
+      {updateSuccess && (
+        <Alert variant="success" dismissible onClose={() => setUpdateSuccess(false)}>
+          Cập nhật thông tin sách thành công!
         </Alert>
       )}
 
@@ -269,6 +295,14 @@ const AdminBookListPage = () => {
                     <td>
                       <div className="d-flex justify-content-center gap-1">
                         <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleEditBook(book)}
+                          title="Chỉnh sửa thông tin sách"
+                        >
+                          ✏️ Sửa
+                        </Button>
+                        <Button
                           variant="outline-danger"
                           size="sm"
                           onClick={() => setBookToDelete(book)}
@@ -291,6 +325,17 @@ const AdminBookListPage = () => {
         show={showCreateModal}
         onHide={() => setShowCreateModal(false)}
         onSuccess={handleCreateSuccess}
+      />
+
+      {/* Update Book Details Modal */}
+      <BookFormModal
+        show={showEditModal}
+        onHide={() => {
+          setShowEditModal(false);
+          setBookToEdit(null);
+        }}
+        onSuccess={handleUpdateSuccess}
+        bookToEdit={bookToEdit}
       />
 
       {/* Delete Confirmation Modal */}
@@ -325,4 +370,3 @@ const AdminBookListPage = () => {
 };
 
 export default AdminBookListPage;
-
