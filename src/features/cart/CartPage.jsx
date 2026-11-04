@@ -9,7 +9,8 @@ import CartSummary from './CartSummary';
 const CartPage = () => {
   const dispatch = useDispatch();
 
-  // Read shopping cart data from Redux state
+  // Read auth and shopping cart data from Redux state
+  const { currentUser } = useSelector((state) => state.auth);
   const { items, totalQuantity, totalAmount } = useSelector((state) => state.cart);
 
   // Modal confirmation state for removing an item
@@ -23,6 +24,29 @@ const CartPage = () => {
     show: false,
     message: '',
   });
+
+  // If logged-in user is an admin, shopping cart is not applicable
+  if (currentUser?.role === 'admin') {
+    return (
+      <Container className="my-5 text-center">
+        <Card className="p-4 p-md-5 shadow-sm border-0 mx-auto" style={{ maxWidth: '600px' }}>
+          <div className="fs-1 mb-3">🛡️</div>
+          <h4 className="fw-bold text-dark mb-2">Tài khoản Quản trị viên (Admin)</h4>
+          <p className="text-muted mb-4">
+            Tài khoản Admin dành riêng cho quản trị hệ thống và không sử dụng tính năng giỏ hàng / mua sắm.
+          </p>
+          <div className="d-flex justify-content-center gap-2 flex-wrap">
+            <Button as={Link} to="/admin/books" variant="danger">
+              📚 Đến Trang Quản Trị Sách
+            </Button>
+            <Button as={Link} to="/" variant="outline-secondary">
+              Về Trang Chủ
+            </Button>
+          </div>
+        </Card>
+      </Container>
+    );
+  }
 
   // Handle quantity changes (minimum 1, maximum item stock)
   const handleQuantityChange = (bookId, newQuantity) => {
