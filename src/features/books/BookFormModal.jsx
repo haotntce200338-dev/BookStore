@@ -4,16 +4,16 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 const API_URL = 'http://localhost:3001/books';
 /**
- * Hàm tự động sinh Mã sách tiếp theo dạng "b-xxx" (ví dụ: b-101, b-102, b-103...)
- * @param {Array} bookList - Danh sách các sách hiện có
- * @param {number} defaultStart - Số bắt đầu nếu chưa có sách nào (mặc định là 101)
- * @returns {string} Mã sách mới (ví dụ: "b-102")
+ * Auto-generates the next sequential book code (e.g., "b-101", "b-102").
+ * @param {Array} bookList - Existing books
+ * @param {number} defaultStart - Starting index if empty (default: 101)
+ * @returns {string} Next code (e.g., "b-102")
  */
 export const generateNextBookCode = (bookList = [], defaultStart = 101) => {
   if (!Array.isArray(bookList) || bookList.length === 0) {
     return `b-${defaultStart}`;
   }
-  // Tách lấy các số sau tiền tố "b-" từ bookCode hoặc id
+  // Extract numeric suffixes after prefix "b-"
   const existingNumbers = bookList
     .map((book) => {
       const code = book?.bookCode || book?.id;
@@ -22,11 +22,11 @@ export const generateNextBookCode = (bookList = [], defaultStart = 101) => {
       return match ? parseInt(match[1], 10) : null;
     })
     .filter((num) => num !== null && !isNaN(num));
-  // Nếu trong danh sách chưa có mã nào dạng b-xxx thì bắt đầu từ defaultStart
+  // Fallback to default start if no valid codes exist
   if (existingNumbers.length === 0) {
     return `b-${defaultStart}`;
   }
-  // Lấy số lớn nhất hiện tại cộng thêm 1
+  // Increment highest existing code
   const maxNumber = Math.max(...existingNumbers);
   return `b-${maxNumber + 1}`;
 };
@@ -45,7 +45,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
   const [validated, setValidated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
-  // Sinh mã sách kế tiếp (ví dụ: b-102)
+  // Generate next book code
   const nextBookCode = generateNextBookCode(books, 101);
   useEffect(() => {
     if (show) {
@@ -80,8 +80,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
     }
     setSubmitting(true);
     setErrorMessage(null);
-    // Chuẩn bị dữ liệu gửi lên API:
-    // Trường bookCode sẽ lưu cố định mã dạng b-102 do frontend sinh ra
+    // Prepare payload with generated book code
     const newBook = {
       bookCode: nextBookCode,
       title: formData.title.trim(),
@@ -127,7 +126,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
             </Alert>
           )}
           <Row className="g-3">
-            {/* Hiển thị Mã sách tự động tăng */}
+            {/* Auto-generated Book Code */}
             <Col md={6}>
               <Form.Group controlId="bookCode">
                 <Form.Label className="fw-semibold">Mã sách (Tự tăng):</Form.Label>
@@ -143,7 +142,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 </Form.Text>
               </Form.Group>
             </Col>
-            {/* Danh mục */}
+            {/* Category */}
             <Col md={6}>
               <Form.Group controlId="bookCategory">
                 <Form.Label className="fw-semibold">Danh mục / Thể loại:</Form.Label>
@@ -156,7 +155,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 />
               </Form.Group>
             </Col>
-            {/* Tên sách */}
+            {/* Book Title */}
             <Col md={12}>
               <Form.Group controlId="bookTitle">
                 <Form.Label className="fw-semibold">
@@ -175,7 +174,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
-            {/* Tác giả */}
+            {/* Author */}
             <Col md={6}>
               <Form.Group controlId="bookAuthor">
                 <Form.Label className="fw-semibold">
@@ -194,7 +193,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
-            {/* Số lượng tồn kho */}
+            {/* Stock Quantity */}
             <Col md={6}>
               <Form.Group controlId="bookStock">
                 <Form.Label className="fw-semibold">Số lượng tồn kho:</Form.Label>
@@ -208,7 +207,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 />
               </Form.Group>
             </Col>
-            {/* Giá gốc */}
+            {/* Original Price */}
             <Col md={6}>
               <Form.Group controlId="bookOriginalPrice">
                 <Form.Label className="fw-semibold">Giá gốc (VNĐ):</Form.Label>
@@ -222,7 +221,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 />
               </Form.Group>
             </Col>
-            {/* Giá bán */}
+            {/* Selling Price */}
             <Col md={6}>
               <Form.Group controlId="bookPrice">
                 <Form.Label className="fw-semibold">
@@ -242,7 +241,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
-            {/* Link ảnh bìa */}
+            {/* Cover Image URL */}
             <Col md={12}>
               <Form.Group controlId="bookImage">
                 <Form.Label className="fw-semibold">Link ảnh bìa (URL):</Form.Label>
@@ -255,7 +254,7 @@ const BookFormModal = ({ show, onHide, onSuccess }) => {
                 />
               </Form.Group>
             </Col>
-            {/* Mô tả */}
+            {/* Description */}
             <Col md={12}>
               <Form.Group controlId="bookDescription">
                 <Form.Label className="fw-semibold">Mô tả ngắn gọn:</Form.Label>

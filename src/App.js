@@ -1,78 +1,19 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute, { CustomerOnlyRoute } from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BookList from './features/books/BookList';
+import AdminBookListPage from './features/books/AdminBookListPage';
+import AdminDashboardPage from './features/admin/AdminDashboardPage';
 import CartPage from './features/cart/CartPage';
+import CheckoutPage from './features/cart/CheckoutPage';
 import CategoryListPage from './features/categories/CategoryListPage';
-import { logoutUser } from './features/auth/authSlice';
-import { Container, Card, Button, Badge } from 'react-bootstrap';
 import './App.css';
 
-const BookDetail = React.lazy(
-  () => import('./features/books/BookDetail')
-);
-
-// Temporary placeholder for Home page
-const HomePage = () => {
-  const dispatch = useDispatch();
-  const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
-
-  return (
-    <Container className="my-5 text-center">
-      <Card className="p-4 shadow-sm mx-auto mb-4" style={{ maxWidth: '600px' }}>
-        <h2 className="mb-3">📚 BookStore - Trang Chủ</h2>
-        {isAuthenticated ? (
-          <div>
-            <p className="mb-2">
-              Xin chào, <strong>{currentUser?.fullName || currentUser?.username}</strong>!
-            </p>
-            <p className="mb-3">
-              Vai trò hiện tại:{' '}
-              <Badge bg={currentUser?.role === 'admin' ? 'danger' : 'success'}>
-                {currentUser?.role}
-              </Badge>
-            </p>
-            <div className="d-flex justify-content-center gap-2 flex-wrap">
-              {currentUser?.role === 'admin' ? (
-                <>
-                  <Button variant="primary" size="sm" as={Link} to="/admin/books">
-                    Quản Lý Sách
-                  </Button>
-                  <Button variant="outline-primary" size="sm" as={Link} to="/admin/categories">
-                    Quản Lý Thể Loại
-                  </Button>
-                </>
-              ) : (
-                <span className="text-muted small d-block w-100 mb-2">
-                  (Thử gõ <code>/admin/books</code> trên thanh địa chỉ trình duyệt để kiểm tra tính năng chặn phân quyền)
-                </span>
-              )}
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={() => dispatch(logoutUser())}
-              >
-                Đăng xuất
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <p className="text-muted mb-3">Bạn chưa đăng nhập vào hệ thống.</p>
-            <Button variant="primary" as={Link} to="/login">
-              Đến trang Đăng nhập
-            </Button>
-          </div>
-        )}
-      </Card>
-    </Container>
-  );
-};
+const BookDetail = React.lazy(() => import('./features/books/BookDetail'));
 
 function App() {
   return (
@@ -85,19 +26,19 @@ function App() {
         {/* Main content expands to fill available vertical space */}
         <main className="main-content">
           <Routes>
-            {/* Public books catalog homepage (HaoTNT) */}
-            <Route path="/" element={<BookList mode="catalog" />} />
+            {/* ===================== CUSTOMER STOREFRONT ===================== */}
+            {/* Public books catalog homepage */}
+            <Route path="/" element={<BookList />} />
 
-            {/* Authentication route */}
-            <Route path="/home" element={<HomePage />} />
-            {/* Route for viewing book details with lazy loading. */}
+            {/* Book details page with lazy loading */}
             <Route
               path="/books/:id"
               element={
                 <Suspense
                   fallback={
-                    <div className="text-center my-5">
-                      Loading book details...
+                    <div className="text-center my-5 py-5">
+                      <div className="spinner-border text-primary" role="status"></div>
+                      <p className="mt-3 text-muted">Đang tải chi tiết sách...</p>
                     </div>
                   }
                 >
@@ -105,19 +46,51 @@ function App() {
                 </Suspense>
               }
             />
+
+            {/* Authentication routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/cart" element={<CartPage />} />
 
-            {/* Protected Admin routes: Restricted to 'admin' role */}
+            {/* Customer-only routes: Block admin from shopping */}
+            <Route
+              path="/cart"
+              element={
+                <CustomerOnlyRoute>
+                  <CartPage />
+                </CustomerOnlyRoute>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <CustomerOnlyRoute>
+                  <CheckoutPage />
+                </CustomerOnlyRoute>
+              }
+            />
+
+            {/* ===================== ADMIN PORTAL ===================== */}
+            {/* Admin dashboard overview */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin book management (CRUD) */}
             <Route
               path="/admin/books"
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <BookList mode="admin" />
+                  <AdminBookListPage />
                 </ProtectedRoute>
               }
             />
+
+            {/* Admin category management (CRUD) */}
             <Route
               path="/admin/categories"
               element={
@@ -126,9 +99,11 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Redirect /admin root to dashboard */}
             <Route
               path="/admin"
-              element={<Navigate to="/admin/books" replace />}
+              element={<Navigate to="/admin/dashboard" replace />}
             />
 
             {/* Fallback route */}

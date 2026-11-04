@@ -26,19 +26,36 @@ Trước khi bắt tay vào tạo trang hoặc component mới, mỗi thành vi�
 * **Điều hướng:** `react-router-dom` v6.
 * **Mock CSDL:** `json-server` chạy trên file `db.json` tại cổng `3001`.
 * **Component dùng chung:**
-  * `src/components/Navbar.jsx`: Thanh điều hướng toàn hệ thống (hiển thị logo, search, danh mục, giỏ hàng, menu đăng nhập/admin).
+  * `src/components/Navbar.jsx`: Thanh điều hướng toàn hệ thống (phân quyền hiển thị theo Role).
   * `src/components/Footer.jsx`: Chân trang thông tin chung.
-  * `src/components/ProtectedRoute.jsx`: Bảo vệ các route quản trị (`/admin/*`).
-
-> **Lưu ý:** Không tự ý tạo lại một phiên bản Navbar hoặc Footer riêng lẻ trong từng trang.
+  * `src/components/ProtectedRoute.jsx`: Chứa `ProtectedRoute` (chặn Customer vào trang Admin) và `CustomerOnlyRoute` (chặn Admin vào Giỏ hàng/Thanh toán).
 
 ---
 
-## 3. Hệ thống Design Tokens (Màu sắc, Typography & Spacing)
+## 3. Quy chuẩn Phân định 2 Phân hệ độc lập (Storefront vs Admin Portal)
 
-### 3.1 Bảng màu quy chuẩn (Color Palette)
+> [!IMPORTANT]
+> **Quy tắc bất khả xâm phạm:** Hệ thống chia làm 2 không gian hoàn toàn riêng biệt. Tuyệt đối không để Admin dùng chung các tính năng mua sắm của Khách hàng và ngược lại.
 
-Nhóm thống nhất sử dụng các mã màu chuẩn sau trong toàn bộ ứng dụng:
+### 3.1 Phân hệ Cửa hàng (Customer Storefront)
+* **Dành cho:** Khách vãng lai (Guest) và Khách hàng đã đăng nhập (`role === 'customer'`).
+* **Phạm vi trang:** Trang chủ (`/`), Chi tiết sách (`/books/:id`), Giỏ hàng (`/cart`), Thanh toán (`/checkout`), Lịch sử đơn hàng cá nhân.
+* **Quy tắc với Admin:** 
+  * Khi tài khoản có quyền Admin đăng nhập, trên thanh Navbar **phải ẩn nút Giỏ hàng 🛒**, thay bằng nút `[🛡️ Cổng Quản Trị]`.
+  * Trên thẻ sách (`BookCard`) và trang chi tiết (`BookDetail`), tài khoản Admin **không nhìn thấy nút "Thêm vào giỏ" hay "Mua ngay"**, mà hiển thị nút liên kết đến trang quản trị kho sách.
+  * Các route `/cart` và `/checkout` được bọc bởi `CustomerOnlyRoute`: nếu Admin cố tình gõ link trên trình duyệt, hệ thống sẽ chặn đứng và yêu cầu quay lại Cổng Quản trị.
+
+### 3.2 Phân hệ Quản trị (Admin Portal)
+* **Dành cho:** Duy nhất tài khoản Quản trị viên (`role === 'admin'`).
+* **Phạm vi trang:** `/admin/dashboard`, `/admin/books`, `/admin/categories`.
+* **Quy tắc giao diện:** Tuyệt đối không chứa nút Giỏ hàng, không có các thao tác mua sắm. Toàn bộ các trang con đều được bọc bởi `ProtectedRoute allowedRoles={['admin']}`.
+* **Tách bạch Component:** Không được viết gộp 1 component vừa render cho Khách vừa render bảng cho Admin bằng biến `mode="admin"`. Phải tách thành các component riêng biệt (ví dụ: `BookList.jsx` cho Khách và `AdminBookListPage.jsx` cho Admin).
+
+---
+
+## 4. Hệ thống Design Tokens (Màu sắc, Typography & Spacing)
+
+### 4.1 Bảng màu quy chuẩn (Color Palette)
 
 | Vai trò | Mã màu | Cách sử dụng trên giao diện |
 | :--- | :---: | :--- |
@@ -55,146 +72,130 @@ Nhóm thống nhất sử dụng các mã màu chuẩn sau trong toàn bộ ứn
 | **Success Color** | `#198754` | Trạng thái đặt hàng thành công, badge "Còn hàng" |
 | **Danger / Error** | `#DC3545` | Báo lỗi validation, nút Xóa, badge "Hết hàng" |
 
-### 3.2 Typography (Kiểu chữ)
-* **Font chữ:** Sử dụng font không chân hiện đại: `'Segoe UI', Roboto, Helvetica, Arial, sans-serif`.
-* **Quy chuẩn hiển thị giá:** Mọi số tiền hiển thị trên giao diện phải được định dạng có dấu chấm phân cách hàng nghìn và kèm chữ `đ` hoặc `VNĐ` (Ví dụ: `150.000 đ`). Dùng hàm `price.toLocaleString('vi-VN') + ' đ'`.
+### 4.2 Typography & Quy chuẩn hiển thị giá
+* **Font chữ:** `'Segoe UI', Roboto, Helvetica, Arial, sans-serif`.
+* **Quy chuẩn hiển thị giá tiền:** Bắt buộc định dạng có dấu chấm phân cách hàng nghìn và kèm chữ `đ` hoặc `VNĐ`. Dùng hàm: `Number(price).toLocaleString('vi-VN') + ' đ'`.
 
-### 3.3 Khoảng cách & Bố cục lưới
-* Mọi trang nội dung (ngoại trừ Navbar và Footer) đều phải được bọc trong thẻ `<Container className="my-4">` của React-Bootstrap để đảm bảo không bị dính sát mép màn hình.
-* Lưới sản phẩm (Grid Card) chuẩn:
-  * Mobile (< 768px): 1 đến 2 cột (`xs={12} sm={6}`).
-  * Tablet (768px - 991px): 3 cột (`md={4}`).
-  * Desktop ($\ge$ 992px): 4 cột (`lg={3}`).
+### 4.3 Bố cục lưới & Khoảng cách
+* Tất cả các trang đều bọc trong `<Container className="my-4">` của React-Bootstrap.
+* Lưới sản phẩm (Grid Card) chuẩn: Mobile (`xs={12} sm={6}`), Tablet (`md={4}`), Desktop (`lg={3}`).
 
 ---
 
-## 4. Quy chuẩn Component (Component Specifications)
+## 5. Quy chuẩn Xóa mềm (Soft Delete) & Toàn vẹn CSDL
 
-### 4.1 Thẻ sách (Book Card)
-Thẻ sách xuất hiện ở Trang chủ, Danh mục và Sách gợi ý, bắt buộc tuân theo:
-1. **Ảnh bìa:** Tỷ lệ khung hình cố định (khuyên dùng chiều cao `260px`), sử dụng thuộc tính `object-fit: cover` để ảnh không bị méo.
-2. **Tiêu đề sách:** Giới hạn hiển thị tối đa 2 dòng (dùng CSS `line-clamp: 2`), tránh việc sách có tên dài làm lệch chiều cao hàng card.
-3. **Giá bán:** Hiển thị rõ giá bán hiện tại (đỏ, đậm) và giá gốc (nếu có, xám gạch ngang).
-4. **Nút tương tác:** Gồm nút *"Xem chi tiết"* (chuyển trang) và nút *"Thêm giỏ hàng"* (kèm icon giỏ hàng).
+> [!WARNING]
+> **Tuyệt đối không sử dụng Xóa cứng (Hard Delete / HTTP DELETE) đối với Sách và Danh mục.**
 
-### 4.2 Biểu mẫu & Kiểm tra hợp lệ (Form & Validation Rules)
-Đây là tiêu chí giảng viên chấm điểm rất kỹ:
-* **Tuyệt đối không dùng thông báo popup mặc định của trình duyệt:** Thêm thuộc tính `noValidate` vào thẻ `<Form>`.
-* **Không dùng `window.alert()` để báo lỗi:** Sử dụng thẻ `<Form.Control.Feedback type="invalid">` của Bootstrap để hiển thị lỗi màu đỏ ngay dưới ô nhập liệu tương ứng.
-* **Giữ nguyên dữ liệu người dùng:** Khi submit thất bại hoặc gặp lỗi, không được reset form làm mất dữ liệu người dùng đã gõ.
-* **Trạng thái xử lý (Submitting):** Trong lúc gọi API, nút bấm Submit phải chuyển sang trạng thái `disabled` và hiển thị Spinner con bên trong để tránh người dùng nhấn liên tục tạo trùng dữ liệu.
-
-### 4.3 Hộp thoại (Modal)
-* Sử dụng component `<Modal>` của React-Bootstrap cho chức năng Thêm/Sửa sách và Thêm/Sửa thể loại.
-* **Đóng khi bấm ra ngoài:** Cho phép người dùng click vào vùng mờ (backdrop) hoặc nhấn phím `Escape` (`Esc`) để thoát modal.
-* **Xác nhận hành động nguy hiểm:** Khi người dùng nhấn nút "Xóa" một cuốn sách hoặc thể loại, bắt buộc mở một Modal xác nhận nhỏ (Confirm Dialog) hỏi: *"Bạn có chắc chắn muốn xóa [Tên] không?"* với nút "Hủy" và nút "Xác nhận xóa" (màu đỏ).
+1. **Cơ chế Xóa mềm:**
+   * Mọi đối tượng sách (`books`) và thể loại (`categories`) trong file `db.json` đều có trường `"isDeleted": false`.
+   * Khi người dùng bấm "Xóa" một cuốn sách hoặc thể loại, lập trình viên gửi request `PATCH` cập nhật `"isDeleted": true`.
+2. **Quy tắc hiển thị (Filtering):**
+   * Phía Khách hàng (Trang chủ, Chi tiết, Gợi ý): **Bắt buộc lọc bỏ** những cuốn sách đã bị xóa mềm (`books.filter(b => !b.isDeleted)`).
+   * Phía Admin: Bảng quản trị mặc định ẩn sách xóa mềm, hoặc có thể làm thêm nút/tab xem "Sách đã xóa" để khôi phục.
+3. **Bảo toàn dữ liệu đơn hàng:**
+   * Khi sách bị xóa mềm, các đơn hàng cũ trong bảng `orders` vẫn giữ nguyên được tên sách và giá tiền mà không bị lỗi mồ côi dữ liệu.
 
 ---
 
-## 5. Quy chuẩn 4 trạng thái dữ liệu (UI States)
+## 6. Quy chuẩn Form, Validation & Modal
 
-Mọi trang hoặc component có lấy dữ liệu từ `json-server` **bắt buộc** phải xử lý đầy đủ 4 trạng thái sau:
+### 6.1 Biểu mẫu & Kiểm tra hợp lệ (Form Validation)
+* **Chặn popup mặc định của trình duyệt:** Luôn thêm thuộc tính `noValidate` vào thẻ `<Form>`.
+* **Nghiêm cấm dùng `window.alert()` để báo lỗi:** Sử dụng `<Form.Control.Feedback type="invalid">` của Bootstrap để hiển thị thông báo lỗi màu đỏ ngay dưới từng ô nhập liệu.
+* **Bảo vệ dữ liệu người dùng:** Khi submit thất bại, giữ nguyên toàn bộ dữ liệu người dùng đã gõ trong form, không reset form.
+* **Trạng thái Submitting:** Trong khi đang gọi API gửi dữ liệu, nút Submit phải bị `disabled` và hiển thị `<Spinner size="sm" />` để tránh người dùng click đúp gửi trùng dữ liệu.
 
-1. **Loading State (Đang tải):**
-   * Hiển thị `<Spinner animation="border" variant="primary" />` căn giữa màn hình hoặc hiển thị khung xương (Placeholder) trong lúc `loading === true`.
-2. **Empty State (Dữ liệu rỗng):**
-   * Khi mảng dữ liệu rỗng (ví dụ: không tìm thấy sách, giỏ hàng trống), không được để màn hình trắng trơn.
-   * Phải hiển thị thông báo thân thiện (ví dụ: `<Alert variant="info">Không tìm thấy cuốn sách nào phù hợp.</Alert>`) kèm nút điều hướng quay lại mua sắm.
-3. **Error State (Tải thất bại):**
-   * Khi server `json-server` chưa bật hoặc API trả về lỗi, hiển thị `<Alert variant="danger">Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.</Alert>` kèm nút *"Thử lại"*.
-4. **Image Fallback (Ảnh bìa lỗi):**
-   * Nếu đường link ảnh của sách bị hỏng hoặc null, bắt buộc xử lý sự kiện `onError` trên thẻ ảnh để thay thế bằng ảnh placeholder mặc định, tránh xuất hiện icon ảnh vỡ trên giao diện.
+### 6.2 Hộp thoại (Modal) & Xác nhận thao tác nguy hiểm
+* Khi thực hiện hành động nguy hiểm (như Xóa sách, Xóa thể loại, Hủy đơn hàng), **bắt buộc mở Modal xác nhận (Confirm Dialog)** với nút "Hủy" và nút "Xác nhận xóa" (màu đỏ).
+* Modal phải tự động đóng khi người dùng click vào vùng mờ (backdrop) hoặc nhấn phím `Esc`.
 
 ---
 
-## 6. Quy chuẩn Quản lý State với Redux Toolkit
+## 7. Quy chuẩn 4 trạng thái dữ liệu (UI States)
 
-Để dự án mạch lạc và dễ dàng phân công công việc:
-* Mỗi mảng tính năng quản lý một Slice riêng:
-  * `bookSlice.js`: Chứa danh sách sách, chi tiết cuốn sách đang chọn, trạng thái `loading`, `error`.
-  * `cartSlice.js`: Chứa mảng các món trong giỏ (`items`), tự động tính `totalQuantity` và `totalAmount`.
-  * `categorySlice.js`: Chứa danh sách thể loại.
-  * `authSlice.js`: Chứa thông tin tài khoản đăng nhập (`currentUser`), trạng thái đăng nhập và quyền hạn (`role: 'admin' | 'customer'`).
-* Mọi thao tác gọi API phải dùng `createAsyncThunk` và xử lý đầy đủ 3 trường hợp trong `extraReducers`: `pending`, `fulfilled`, `rejected`.
-* Tránh lưu trữ dữ liệu trùng lặp giữa local state (`useState`) và Redux store.
+Mọi trang hoặc component có lấy dữ liệu từ `json-server` **bắt buộc** phải xử lý đầy đủ 4 trạng thái:
+
+1. **Loading State:** Hiển thị Spinner căn giữa màn hình hoặc khung xương Placeholder khi đang fetch dữ liệu.
+2. **Empty State:** Khi dữ liệu rỗng (không tìm thấy sách, giỏ hàng trống), phải hiển thị thông báo thân thiện (ví dụ: `<Alert variant="info">...`) kèm nút điều hướng.
+3. **Error State:** Khi API bị lỗi hoặc server chưa bật, hiển thị Alert màu đỏ thông báo lỗi dễ hiểu và có nút **"Thử lại"**.
+4. **Image Fallback:** Tất cả các thẻ ảnh bìa sách `<Card.Img>` hoặc `<img>` bắt buộc có sự kiện `onError` để nạp ảnh placeholder mặc định nếu link ảnh bị chết.
 
 ---
 
-## 7. Cấu trúc mã nguồn & Quy ước đặt tên (Coding Conventions)
+## 8. Cấu trúc mã nguồn & Quy ước tổ chức thư mục
 
-### 7.1 Cấu trúc thư mục
 ```text
 src/
 ├── app/
 │   └── store.js                   <-- Cấu hình Redux Store chung
 ├── components/                    <-- Các component dùng chung toàn app
-│   ├── Navbar.jsx
-│   ├── Footer.jsx
-│   └── ProtectedRoute.jsx
+│   ├── Navbar.jsx                 <-- Thanh điều hướng (phân quyền hiển thị theo Role)
+│   ├── Footer.jsx                 <-- Chân trang thông tin
+│   └── ProtectedRoute.jsx         <-- ProtectedRoute & CustomerOnlyRoute
 ├── features/                      <-- Chia theo từng phân hệ nghiệp vụ
-│   ├── auth/                      <-- Đăng nhập, phân quyền (authSlice.js, LoginPage.jsx)
-│   ├── books/                     <-- Quản lý sách (bookSlice.js, BookList.jsx, BookDetail.jsx...)
-│   ├── cart/                      <-- Giỏ hàng & Checkout (cartSlice.js, CartPage.jsx, CheckoutPage.jsx)
-│   └── categories/                <-- Thể loại (categorySlice.js, CategoryListPage.jsx...)
-├── index.js
-└── App.js
+│   ├── admin/                     <-- Cổng Quản trị viên
+│   │   └── AdminDashboardPage.jsx <-- Bảng điều khiển KPI & duyệt đơn hàng
+│   ├── auth/                      <-- Đăng nhập, đăng ký, phiên làm việc
+│   │   ├── authSlice.js
+│   │   ├── LoginPage.jsx
+│   │   └── RegisterPage.jsx
+│   ├── books/                     <-- Phân hệ Sách
+│   │   ├── bookSlice.js           <-- AsyncThunks & Redux slice sách
+│   │   ├── BookList.jsx           <-- Lưới danh mục sách cho Khách hàng
+│   │   ├── BookCard.jsx           <-- Thẻ sách (phân biệt nút mua cho Khách vs Admin)
+│   │   ├── BookDetail.jsx         <-- Chi tiết sách (chặn Admin mua hàng)
+│   │   ├── RelatedBooks.jsx       <-- Sách gợi ý cùng thể loại
+│   │   ├── AdminBookListPage.jsx  <-- Bảng quản lý kho sách của Admin
+│   │   └── BookFormModal.jsx      <-- Modal Thêm/Sửa sách của Admin
+│   ├── cart/                      <-- Giỏ hàng & Thanh toán (Khách hàng)
+│   │   ├── cartSlice.js
+│   │   ├── CartPage.jsx
+│   │   ├── CartItemRow.jsx
+│   │   └── CheckoutPage.jsx
+│   └── categories/                <-- Quản lý Thể loại sách
+│       ├── categorySlice.js
+│       ├── CategoryListPage.jsx
+│       └── CategoryFormModal.jsx
+├── App.js                         <-- Khai báo Routes chính
+└── index.js
 ```
 
-### 7.2 Quy ước đặt tên
-* **Component & Tên file JSX:** Dùng `PascalCase` (Ví dụ: `BookDetail.jsx`, `BookFormModal.jsx`, `CartPage.jsx`).
-* **Hàm & Biến:** Dùng `camelCase` (Ví dụ: `handleAddToCart`, `calculateTotal`, `bookPrice`).
-* **Slice & Thunk:** Dùng `camelCase` có ý nghĩa rõ ràng (Ví dụ: `fetchBooks`, `addNewBook`, `deleteCategoryById`).
-* **Độ dài Component:** Không viết một component dài quá 250 dòng code. Nếu quá dài, hãy chủ động tách nhỏ thành các sub-components (ví dụ tách `RelatedBooks.jsx`, `CartItemRow.jsx`).
-
 ---
 
-## 8. Quy trình phối hợp làm việc trên Git
+## 9. Quy trình phối hợp làm việc trên Git
 
-Để tránh xung đột mã nguồn (conflict code) trong nhóm 5 người:
-1. **Quy tắc nhánh chính:** Nhánh `main` là nhánh ổn định, tuyệt đối không commit trực tiếp mã nguồn chưa hoàn thiện lên `main`.
-2. **Đặt tên nhánh chức năng (Feature Branch):**
-   * `feature/book-browsing` (Thanh Hào)
-   * `feature/book-detail` (Anh Tuấn 779)
-   * `feature/cart-checkout` (Anh Tuấn 233)
-   * `feature/admin-books` (Trung Hiếu)
-   * `feature/admin-categories-auth` (Thiên Phúc)
+1. **Quy tắc nhánh chính:** Nhánh `main` là nhánh ổn định dùng để nộp bài và demo, tuyệt đối không commit trực tiếp code dang dở lên `main`.
+2. **Quy ước đặt tên nhánh:** `feature/<ten-tinh-nang>` (Ví dụ: `feature/admin-dashboard`, `feature/cart-checkout`).
 3. **Quy ước Commit Message:**
-   * `feat: add book search and category filter` (Thêm tính năng mới)
-   * `fix: prevent quantity from exceeding stock in cart` (Sửa lỗi logic)
-   * `style: improve responsive layout on book card` (Chỉnh sửa UI/CSS)
-   * `refactor: extract related books component` (Tối ưu lại code)
-4. **Trước khi tạo Pull Request / Merge:** Bắt buộc chạy thử ứng dụng cục bộ (`npm start`), mở F12 kiểm tra không còn bất kỳ dòng thông báo lỗi (Warning/Error màu đỏ) nào trên Console.
+   * `feat: add admin dashboard with kpi metrics` (Thêm chức năng mới)
+   * `fix: prevent admin from adding books to cart` (Sửa lỗi logic/bảo mật)
+   * `style: align search bar and category filter` (Sửa giao diện/CSS)
+   * `refactor: separate admin book table into standalone page` (Tối ưu cấu trúc)
+4. **Kiểm tra trước khi Push/Merge:** Bắt buộc chạy thử lệnh `npm run build` trên máy cá nhân để chắc chắn không có lỗi biên dịch hay cảnh báo (Warning) nào trước khi tạo Pull Request.
 
 ---
 
-## 9. Tiêu chuẩn hoàn thành một màn hình (Definition of Done)
+## 10. NHỮNG ĐIỀU NGHIÊM CẤM TRONG DỰ ÁN
 
-Một màn hình hoặc tính năng chỉ được xem là hoàn thành và sẵn sàng demo khi thỏa mãn:
-- [ ] Giao diện hiển thị đúng mã màu, font chữ và sử dụng chuẩn components của React-Bootstrap.
-- [ ] Responsive hiển thị tốt trên cả điện thoại (Mobile) và máy tính (Desktop), không bị thanh cuộn ngang toàn trang.
-- [ ] Có đầy đủ 4 trạng thái: Loading (Spinner), Dữ liệu hiển thị, Empty state và Error state.
-- [ ] Mọi form nhập liệu đều có validation báo lỗi đỏ bên dưới field và chặn bấm nút khi dữ liệu chưa hợp lệ.
-- [ ] Các logic nghiệp vụ con hoạt động chính xác (ví dụ: nút tăng số lượng bị khóa khi chạm trần tồn kho `stock`, tổng tiền nhảy realtime).
-- [ ] Dữ liệu được đồng bộ chính xác với file `db.json` qua `json-server`.
-- [ ] Không có lỗi runtime hoặc warning React trên Console của trình duyệt.
+> [!CAUTION]
+> Các lỗi dưới đây sẽ gây sập hệ thống hoặc làm mất điểm đồ án rất nặng, nghiêm cấm các thành viên vi phạm:
 
----
-
-## 10. Những điều nghiêm cấm trong dự án
-
-* **Không tự ý cài đặt thêm thư viện UI khác:** Nhóm đã thống nhất dùng **React-Bootstrap**. Tuyệt đối không cài thêm Ant Design, MUI, Tailwind CSS hay thư viện ngoài gây xung đột CSS và nặng dự án.
-* **Không hard-code (viết cứng) dữ liệu trong JSX:** Mọi thông tin sách, thể loại, đơn hàng đều phải được lấy động từ Redux Store hoặc API `db.json`.
-* **Không dùng inline style tràn lan:** Trừ những trường hợp đặc biệt cần tính toán style động (như phần trăm width), còn lại phải dùng class tiện ích của Bootstrap (`className="d-flex justify-content-between p-3"`...).
-* **Không xóa hoặc sửa đổi cấu trúc Slice của thành viên khác** mà chưa có sự đồng ý của bạn phụ trách module đó.
+1. **KHÔNG tự ý `import` hoặc cài đặt thêm thư viện ngoài:** Dự án đã thống nhất bộ thư viện trong `package.json` (React, Redux Toolkit, React-Bootstrap, Axios). Tuyệt đối không tự ý cài thêm Ant Design, Tailwind, MUI, hay thư viện lạ (như bài học lỗi `bcryptjs`) làm sập quá trình build của cả nhóm.
+2. **KHÔNG tự ý vẽ thêm các tính năng "ảo" không có trong CSDL:** Mọi tính năng đều phải gắn liền với các bảng thực tế trong `db.json` (`books`, `categories`, `orders`, `users`). Tuyệt đối không tự ý thêm các tính năng ảo (như Favorites, Review 5 sao) khi CSDL chưa có bảng lưu trữ.
+3. **KHÔNG gộp giao diện Khách hàng và Admin vào chung một Component:** Phải tách bạch riêng biệt giữa component hiển thị cho Khách và component bảng quản trị của Admin.
+4. **KHÔNG cho phép Admin thực hiện luồng mua sắm:** Admin không được thêm giỏ hàng, không được checkout.
+5. **KHÔNG xóa cứng (Hard Delete) dữ liệu:** Phải dùng cờ `isDeleted: true` để bảo vệ toàn vẹn lịch sử đơn hàng.
+6. **KHÔNG viết component quá dài:** Nếu component dài quá 250 dòng code, bắt buộc phải tách nhỏ thành các sub-components.
 
 ---
 
-## 11. Bảng phân công nhanh theo thư mục chịu trách nhiệm
+## 11. Bảng phân công trách nhiệm chi tiết (Nhóm 5 thành viên)
 
-| Thành viên | MSSV | Thư mục & Files phụ trách chính | Module nghiệp vụ |
-| :--- | :---: | :--- | :--- |
-| **Trần Nguyễn Thanh Hào** *(Leader)* | CE200338 | `src/features/books/BookList.jsx`, `src/components/Navbar.jsx`, `Footer.jsx` | Xem sách, Tìm kiếm, Lọc danh mục, Layout |
-| **Trương Anh Tuấn** | CE200779 | `src/features/books/BookDetail.jsx`, `RelatedBooks.jsx` | Chi tiết sách, Chọn số lượng mua, Sách liên quan |
-| **Trương Anh Tuấn** | CE201233 | `src/features/cart/` (`CartPage.jsx`, `CheckoutPage.jsx`, `cartSlice.js`) | Toàn bộ luồng Giỏ hàng, Tính tiền & Đặt hàng |
-| **Lương Trung Hiếu** | CE201492 | `src/features/books/BookFormModal.jsx`, `AdminBookList.jsx` | Bảng quản lý sách Admin, Thêm/Sửa/Xóa sách |
-| **Đỗ Trần Thiên Phúc** | CE201183 | `src/features/categories/`, `src/features/auth/`, `ProtectedRoute.jsx` | Quản trị thể loại, Đăng nhập & Phân quyền Admin |
+| Thành viên | MSSV | Vai trò | Files & Thư mục phụ trách chính | Module nghiệp vụ |
+| :--- | :---: | :---: | :--- | :--- |
+| **Trần Nguyễn Thanh Hào** | **CE200338** | **Leader** | `src/features/books/BookList.jsx`, `src/components/Navbar.jsx`, `Footer.jsx` | Khám phá sách Khách hàng, Tìm kiếm realtime, Lọc thể loại, Khung Layout cửa hàng. |
+| **Trương Anh Tuấn** | **CE200779** | Member | `src/features/books/BookDetail.jsx`, `RelatedBooks.jsx` | Chi tiết sản phẩm, Tồn kho, Sách gợi ý, Lịch sử đơn hàng khách hàng (`My Orders`). |
+| **Trương Anh Tuấn** | **CE201233** | Member | `src/features/cart/` (`CartPage.jsx`, `CartItemRow.jsx`, `CheckoutPage.jsx`, `cartSlice.js`) | Toàn bộ luồng Giỏ hàng, Tính tiền realtime, Xác nhận & Đặt hàng (`orders`). |
+| **Lương Trung Hiếu** | **CE201492** | Member | `src/features/books/AdminBookListPage.jsx`, `BookFormModal.jsx` | Phân hệ Quản trị Kho sách Admin (Full 4 CRUD: Xem bảng, Thêm, Sửa, Xóa mềm). |
+| **Đỗ Trần Thiên Phúc** | **CE201183** | Member | `src/features/admin/AdminDashboardPage.jsx`, `src/features/categories/`, `src/features/auth/`, `ProtectedRoute.jsx` | Cổng Quản trị Admin, Dashboard KPI doanh thu, Full 4 CRUD Thể loại, Xác thực & Phân quyền bảo vệ 2 chiều. |

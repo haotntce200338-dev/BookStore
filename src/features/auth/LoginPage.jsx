@@ -33,7 +33,7 @@ const LoginPage = () => {
       const fromPath = location.state?.from?.pathname;
 
       if (role === 'admin') {
-        redirectPath = fromPath && fromPath.startsWith('/admin') ? fromPath : '/admin/books';
+        redirectPath = fromPath && fromPath.startsWith('/admin') ? fromPath : '/admin/dashboard';
       } else {
         // Customers are strictly kept to customer/public pages
         redirectPath = fromPath && !fromPath.startsWith('/admin') ? fromPath : '/';

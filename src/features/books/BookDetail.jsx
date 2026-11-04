@@ -40,6 +40,8 @@ function BookDetail() {
   const { currentBook, bookLoading, bookError, bookNotFound } = useSelector(
     (state) => state.books
   );
+  const { currentUser } = useSelector((state) => state.auth);
+  const isAdmin = currentUser?.role === 'admin';
 
   const [quantity, setQuantity] = useState(1);
   const [showToast, setShowToast] = useState(false);
@@ -65,14 +67,14 @@ function BookDetail() {
   };
 
   const handleAddToCart = () => {
-    if (isOutOfStock) return;
+    if (isOutOfStock || isAdmin) return;
     dispatch(addToCart({ book: currentBook, quantity }));
     setToastMessage(`Đã thêm ${quantity} cuốn "${currentBook.title}" vào giỏ hàng!`);
     setShowToast(true);
   };
 
   const handleBuyNow = () => {
-    if (isOutOfStock) return;
+    if (isOutOfStock || isAdmin) return;
     dispatch(addToCart({ book: currentBook, quantity }));
     navigate('/cart');
   };
@@ -117,21 +119,23 @@ function BookDetail() {
 
   return (
     <Container className="my-4">
-      {/* Toast Notification when added to cart */}
-      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1055 }}>
-        <Toast show={showToast} onClose={() => setShowToast(false)} delay={3000} autohide bg="success">
-          <Toast.Header>
-            <strong className="me-auto text-success">🛒 Giỏ hàng BookStore</strong>
-            <small>Vừa xong</small>
-          </Toast.Header>
-          <Toast.Body className="text-white">
-            <p className="mb-2">{toastMessage}</p>
-            <Button as={Link} to="/cart" size="sm" variant="light" className="text-success fw-bold">
-              Xem giỏ hàng →
-            </Button>
-          </Toast.Body>
-        </Toast>
-      </ToastContainer>
+      {/* Cart toast notification for customers */}
+      {!isAdmin && (
+        <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1055 }}>
+          <Toast show={showToast} onClose={() => setShowToast(false)} delay={3000} autohide bg="success">
+            <Toast.Header>
+              <strong className="me-auto text-success">🛒 Giỏ hàng BookStore</strong>
+              <small>Vừa xong</small>
+            </Toast.Header>
+            <Toast.Body className="text-white">
+              <p className="mb-2">{toastMessage}</p>
+              <Button as={Link} to="/cart" size="sm" variant="light" className="text-success fw-bold">
+                Xem giỏ hàng →
+              </Button>
+            </Toast.Body>
+          </Toast>
+        </ToastContainer>
+      )}
 
       <Button as={Link} to="/" variant="outline-secondary" className="mb-4">
         ← Quay lại
@@ -179,64 +183,80 @@ function BookDetail() {
             )}
           </div>
 
-          {/* Quantity Selector with inventory limits */}
-          <div className="mb-4">
-            <Form.Label className="fw-semibold small d-block mb-2">Chọn số lượng mua:</Form.Label>
-            <div className="d-flex align-items-center gap-3">
-              <InputGroup style={{ maxWidth: '140px' }}>
-                <Button
-                  variant="outline-secondary"
-                  disabled={quantity <= 1 || isOutOfStock}
-                  onClick={handleDecrease}
-                >
-                  -
+          {/* Purchase controls: Block admin from purchasing */}
+          {isAdmin ? (
+            <div className="alert alert-warning p-3 mb-4 rounded border-warning">
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                  <span className="fw-bold">🛡️ Chế độ Quản trị viên:</span> Tài khoản Admin không thực hiện đặt hàng.
+                </div>
+                <Button as={Link} to="/admin/books" variant="danger" size="sm" className="fw-semibold">
+                  ✏️ Quản lý kho sách
                 </Button>
-                <Form.Control
-                  type="number"
-                  min="1"
-                  max={maxStock}
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  disabled={isOutOfStock}
-                  className="text-center fw-bold"
-                />
-                <Button
-                  variant="outline-secondary"
-                  disabled={quantity >= maxStock || isOutOfStock}
-                  onClick={handleIncrease}
-                >
-                  +
-                </Button>
-              </InputGroup>
-              <small className="text-muted">
-                {isOutOfStock ? 'Sản phẩm tạm thời hết hàng' : `(Tối đa ${maxStock} cuốn)`}
-              </small>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Quantity Selector with inventory limits */}
+              <div className="mb-4">
+                <Form.Label className="fw-semibold small d-block mb-2">Chọn số lượng mua:</Form.Label>
+                <div className="d-flex align-items-center gap-3">
+                  <InputGroup style={{ maxWidth: '140px' }}>
+                    <Button
+                      variant="outline-secondary"
+                      disabled={quantity <= 1 || isOutOfStock}
+                      onClick={handleDecrease}
+                    >
+                      -
+                    </Button>
+                    <Form.Control
+                      type="number"
+                      min="1"
+                      max={maxStock}
+                      value={quantity}
+                      onChange={handleQuantityChange}
+                      disabled={isOutOfStock}
+                      className="text-center fw-bold"
+                    />
+                    <Button
+                      variant="outline-secondary"
+                      disabled={quantity >= maxStock || isOutOfStock}
+                      onClick={handleIncrease}
+                    >
+                      +
+                    </Button>
+                  </InputGroup>
+                  <small className="text-muted">
+                    {isOutOfStock ? 'Sản phẩm tạm thời hết hàng' : `(Tối đa ${maxStock} cuốn)`}
+                  </small>
+                </div>
+              </div>
 
-          {/* Add to Cart & Buy Now Buttons */}
-          <div className="d-flex flex-wrap gap-2 mb-4">
-            <Button
-              variant="primary"
-              size="lg"
-              disabled={isOutOfStock}
-              onClick={handleAddToCart}
-              className="px-4 fw-semibold d-inline-flex align-items-center gap-2"
-              style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
-            >
-              <span>🛒</span>
-              <span>Thêm vào giỏ hàng</span>
-            </Button>
-            <Button
-              variant="outline-primary"
-              size="lg"
-              disabled={isOutOfStock}
-              onClick={handleBuyNow}
-              className="px-4 fw-semibold"
-            >
-              Mua ngay
-            </Button>
-          </div>
+              {/* Add to Cart & Buy Now Buttons */}
+              <div className="d-flex flex-wrap gap-2 mb-4">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  disabled={isOutOfStock}
+                  onClick={handleAddToCart}
+                  className="px-4 fw-semibold d-inline-flex align-items-center gap-2"
+                  style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
+                >
+                  <span>🛒</span>
+                  <span>Thêm vào giỏ hàng</span>
+                </Button>
+                <Button
+                  variant="outline-primary"
+                  size="lg"
+                  disabled={isOutOfStock}
+                  onClick={handleBuyNow}
+                  className="px-4 fw-semibold"
+                >
+                  Mua ngay
+                </Button>
+              </div>
+            </>
+          )}
 
           <hr />
 

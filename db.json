@@ -48,6 +48,7 @@
   "orders": [
     {
       "id": "ord-1001",
+      "userId": "u-2",
       "customerName": "Trương Anh Tuấn",
       "phone": "0912345678",
       "address": "Số 123 Đường 3/2, Cần Thơ",
@@ -62,6 +63,48 @@
       "totalAmount": 300000,
       "status": "Pending",
       "orderDate": "2026-10-24T10:00:00Z"
+    },
+    {
+      "id": "ord-1002",
+      "userId": "u-2",
+      "customerName": "Trương Anh Tuấn",
+      "phone": "0912345678",
+      "address": "Số 123 Đường 3/2, Cần Thơ",
+      "items": [
+        {
+          "bookId": "b-102",
+          "title": "Nhà Giả Kim",
+          "price": 79000,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 79000,
+      "status": "Delivered",
+      "orderDate": "2026-10-25T14:30:00Z"
+    },
+    {
+      "id": "ord-1003",
+      "userId": "u-2",
+      "customerName": "Lê Hoàng Long",
+      "phone": "0987654321",
+      "address": "Ninh Kiều, Cần Thơ",
+      "items": [
+        {
+          "bookId": "b-101",
+          "title": "Học ReactJS Toàn Tập",
+          "price": 150000,
+          "quantity": 1
+        },
+        {
+          "bookId": "b-102",
+          "title": "Nhà Giả Kim",
+          "price": 79000,
+          "quantity": 2
+        }
+      ],
+      "totalAmount": 308000,
+      "status": "Delivered",
+      "orderDate": "2026-10-26T09:15:00Z"
     }
   ],
   "users": [
