@@ -87,7 +87,7 @@ const Navbar = () => {
 
           {/* Action section: Cart (Customer only) and User Authentication */}
           <Nav className="align-items-lg-center d-flex flex-row gap-2 mt-2 mt-lg-0">
-            {/* Cart link button - CHỈ HIỂN THỊ CHO GUEST VÀ CUSTOMER (KHÔNG HIỂN THỊ CHO ADMIN) */}
+            {/* Cart button: visible to guests and customers only */}
             {!isAdmin ? (
               <Button
                 as={Link}

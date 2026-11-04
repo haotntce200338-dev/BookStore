@@ -26,11 +26,11 @@ function App() {
         {/* Main content expands to fill available vertical space */}
         <main className="main-content">
           <Routes>
-            {/* ===================== PHÂN HỆ KHÁCH HÀNG (STOREFRONT) ===================== */}
-            {/* Public books catalog homepage (HaoTNT) */}
+            {/* ===================== CUSTOMER STOREFRONT ===================== */}
+            {/* Public books catalog homepage */}
             <Route path="/" element={<BookList />} />
 
-            {/* Route for viewing book details with lazy loading (TuanTA 779) */}
+            {/* Book details page with lazy loading */}
             <Route
               path="/books/:id"
               element={
@@ -51,7 +51,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* Customer-only routes: CHẶN ADMIN KHÔNG ĐƯỢC MUA HÀNG (TuanTA 233) */}
+            {/* Customer-only routes: Block admin from shopping */}
             <Route
               path="/cart"
               element={
@@ -69,8 +69,8 @@ function App() {
               }
             />
 
-            {/* ===================== PHÂN HỆ QUẢN TRỊ VIÊN (ADMIN PORTAL) ===================== */}
-            {/* Route tổng quan & thống kê doanh thu Admin Dashboard */}
+            {/* ===================== ADMIN PORTAL ===================== */}
+            {/* Admin dashboard overview */}
             <Route
               path="/admin/dashboard"
               element={
@@ -80,7 +80,7 @@ function App() {
               }
             />
 
-            {/* Quản trị kho sách Admin (Full CRUD - HieuLT) */}
+            {/* Admin book management (CRUD) */}
             <Route
               path="/admin/books"
               element={
@@ -90,7 +90,7 @@ function App() {
               }
             />
 
-            {/* Quản lý danh mục thể loại Admin (Full CRUD - PhucDTT) */}
+            {/* Admin category management (CRUD) */}
             <Route
               path="/admin/categories"
               element={
@@ -100,7 +100,7 @@ function App() {
               }
             />
 
-            {/* Điều hướng mặc định cho /admin về /admin/dashboard */}
+            {/* Redirect /admin root to dashboard */}
             <Route
               path="/admin"
               element={<Navigate to="/admin/dashboard" replace />}

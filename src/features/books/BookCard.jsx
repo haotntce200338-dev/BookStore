@@ -77,7 +77,7 @@ const BookCard = ({ book, onAddToCart }) => {
             )}
           </div>
 
-          {/* Action buttons - phân biệt giữa Khách hàng và Admin */}
+          {/* Action buttons: Role-based actions (Customer vs Admin) */}
           <div className="d-grid gap-2">
             <Button
               as={Link}

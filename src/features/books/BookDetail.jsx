@@ -119,7 +119,7 @@ function BookDetail() {
 
   return (
     <Container className="my-4">
-      {/* Toast Notification when added to cart (Only for Customer) */}
+      {/* Cart toast notification for customers */}
       {!isAdmin && (
         <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1055 }}>
           <Toast show={showToast} onClose={() => setShowToast(false)} delay={3000} autohide bg="success">
@@ -183,7 +183,7 @@ function BookDetail() {
             )}
           </div>
 
-          {/* Phân biệt rõ quyền mua hàng: Admin không được đặt hàng */}
+          {/* Purchase controls: Block admin from purchasing */}
           {isAdmin ? (
             <div className="alert alert-warning p-3 mb-4 rounded border-warning">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">

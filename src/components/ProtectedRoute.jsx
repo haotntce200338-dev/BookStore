@@ -5,13 +5,11 @@ import { Container, Card, Button, Badge } from 'react-bootstrap';
 import { logoutUser } from '../features/auth/authSlice';
 
 /**
- * ProtectedRoute component:
- * 1. Chặn người dùng chưa đăng nhập -> chuyển hướng về /login (lưu vị trí trước đó).
- * 2. Chặn người dùng đã đăng nhập nhưng không đúng quyền (ví dụ customer cố tình gõ /admin/* vào URL bar).
- *    -> Hiển thị màn hình 403 Access Denied, chặn tuyệt đối truy cập vào giao diện quản trị.
+ * Route guard for authenticated users with role verification.
+ * Redirects unauthenticated users to /login and displays a 403 page for unauthorized roles.
  *
- * @param {Array<string>} allowedRoles - Danh sách các vai trò được phép truy cập (mặc định: ['admin'])
- * @param {React.ReactNode} children - Component con được bảo vệ
+ * @param {Array<string>} allowedRoles - Permitted roles (default: ['admin'])
+ * @param {React.ReactNode} children - Protected component
  */
 const ProtectedRoute = ({ allowedRoles = ['admin'], children }) => {
   const dispatch = useDispatch();
@@ -20,16 +18,16 @@ const ProtectedRoute = ({ allowedRoles = ['admin'], children }) => {
     (state) => state.auth
   );
 
-  // Trường hợp 1: Người dùng chưa đăng nhập
+  // Case 1: Unauthenticated user
   if (!isAuthenticated || !currentUser) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Lấy role hiện tại và kiểm tra tính hợp lệ
+  // Verify user role
   const userRole = role || currentUser.role;
   const isAuthorized = allowedRoles.includes(userRole);
 
-  // Trường hợp 2: Đã đăng nhập nhưng không có quyền (ví dụ: customer cố tình truy cập trang admin)
+  // Case 2: Unauthorized role -> 403 Access Denied
   if (!isAuthorized) {
     return (
       <Container className="my-5">
@@ -76,14 +74,13 @@ const ProtectedRoute = ({ allowedRoles = ['admin'], children }) => {
     );
   }
 
-  // Trường hợp 3: Hợp lệ -> hiển thị nội dung được bảo vệ
+  // Case 3: Authorized -> render protected content
   return children ? children : <Outlet />;
 };
 
 /**
- * CustomerOnlyRoute:
- * Chặn tài khoản 'admin' truy cập vào các trang giỏ hàng, thanh toán.
- * Khách vãng lai (chưa đăng nhập) hoặc khách hàng (role 'customer') vẫn được phép vào.
+ * Route guard that prevents 'admin' accounts from accessing customer cart/checkout.
+ * Guests and customers are permitted.
  */
 export const CustomerOnlyRoute = ({ children }) => {
   const { currentUser } = useSelector((state) => state.auth);

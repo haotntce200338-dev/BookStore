@@ -106,7 +106,7 @@ const AdminDashboardPage = () => {
         <>
           {/* 4 Metric / KPI Cards */}
           <Row className="g-3 mb-4">
-            {/* Card 1: Doanh thu */}
+            {/* Metric 1: Revenue */}
             <Col xs={12} sm={6} lg={3}>
               <Card className="shadow-sm border-0 bg-primary text-white h-100">
                 <Card.Body className="p-3">
@@ -122,7 +122,7 @@ const AdminDashboardPage = () => {
               </Card>
             </Col>
 
-            {/* Card 2: Đơn hàng */}
+            {/* Metric 2: Orders */}
             <Col xs={12} sm={6} lg={3}>
               <Card className="shadow-sm border-0 bg-warning text-dark h-100">
                 <Card.Body className="p-3">
@@ -140,7 +140,7 @@ const AdminDashboardPage = () => {
               </Card>
             </Col>
 
-            {/* Card 3: Kho sách */}
+            {/* Metric 3: Books */}
             <Col xs={12} sm={6} lg={3}>
               <Card className="shadow-sm border-0 bg-success text-white h-100">
                 <Card.Body className="p-3">
@@ -162,7 +162,7 @@ const AdminDashboardPage = () => {
               </Card>
             </Col>
 
-            {/* Card 4: Thể loại */}
+            {/* Metric 4: Categories */}
             <Col xs={12} sm={6} lg={3}>
               <Card className="shadow-sm border-0 bg-dark text-white h-100">
                 <Card.Body className="p-3">
