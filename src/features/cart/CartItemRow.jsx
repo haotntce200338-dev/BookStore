@@ -9,7 +9,7 @@ const formatPrice = (price) => {
   return Number(price || 0).toLocaleString('vi-VN') + ' đ';
 };
 
-const CartItemRow = ({ item, onQuantityChange }) => {
+const CartItemRow = ({ item, onQuantityChange, onRemoveRequest }) => {
   const isMaxStock = item.quantity >= item.stock;
 
   const handleImageError = (e) => {
@@ -57,7 +57,7 @@ const CartItemRow = ({ item, onQuantityChange }) => {
         </div>
 
         {/* Book Information */}
-        <div className="col-9 col-sm-5">
+        <div className="col-9 col-sm-4 col-md-5">
           <Link
             to={`/books/${item.id}`}
             className="text-decoration-none text-dark fw-bold hover-primary d-block mb-1 line-clamp-2"
@@ -82,10 +82,10 @@ const CartItemRow = ({ item, onQuantityChange }) => {
           </div>
         </div>
 
-        {/* Quantity Controller (Update Quantity Feature) */}
-        <div className="col-6 col-sm-3">
+        {/* Quantity Controller */}
+        <div className="col-6 col-sm-3 col-md-2">
           <div className="d-flex flex-column align-items-start align-items-sm-center">
-            <InputGroup size="sm" style={{ maxWidth: '120px' }}>
+            <InputGroup size="sm" style={{ maxWidth: '115px' }}>
               <Button
                 variant="outline-secondary"
                 disabled={item.quantity <= 1}
@@ -123,14 +123,27 @@ const CartItemRow = ({ item, onQuantityChange }) => {
           </div>
         </div>
 
-        {/* Line Total */}
-        <div className="col-6 col-sm-2 text-end">
-          <span className="d-sm-none text-muted small d-block">
-            Thành tiền:
-          </span>
-          <span className="fs-6 fw-bold text-danger">
-            {formatPrice(lineTotal)}
-          </span>
+        {/* Line Total & Remove Action */}
+        <div className="col-6 col-sm-3 col-md-3 text-end">
+          <div className="mb-1">
+            <span className="d-sm-none text-muted small d-block">
+              Thành tiền:
+            </span>
+            <span className="fs-6 fw-bold text-danger">
+              {formatPrice(lineTotal)}
+            </span>
+          </div>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={() => onRemoveRequest(item)}
+            className="d-inline-flex align-items-center gap-1 border-0 text-danger px-2 py-1"
+            title="Xóa cuốn sách này khỏi giỏ hàng"
+            aria-label={`Xóa cuốn sách ${item.title}`}
+          >
+            <span>🗑️</span>
+            <span className="small">Xóa</span>
+          </Button>
         </div>
       </div>
     </div>
