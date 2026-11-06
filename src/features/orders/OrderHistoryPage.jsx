@@ -9,7 +9,10 @@ import {
   Spinner,
 } from 'react-bootstrap';
 
-import { fetchCustomerOrders } from './orderSlice';
+import {
+  fetchCustomerOrders,
+  cancelCustomerOrder,
+} from './orderSlice';
 
 // Format price into Vietnamese currency.
 function formatPrice(price) {
@@ -51,9 +54,13 @@ function OrderHistoryPage() {
 
   const { currentUser } = useSelector((state) => state.auth);
 
-  const { orders, loading, error } = useSelector(
-    (state) => state.orders
-  );
+  const {
+    orders,
+    loading,
+    error,
+    cancellingOrderId,
+    cancelError,
+  } = useSelector((state) => state.orders);
 
   // Fetch orders when the page opens.
   useEffect(() => {
@@ -62,10 +69,27 @@ function OrderHistoryPage() {
     }
   }, [dispatch, currentUser?.id]);
 
+  // Retry loading customer orders.
   const handleRetry = () => {
     if (currentUser?.id) {
       dispatch(fetchCustomerOrders(currentUser.id));
     }
+  };
+
+  // Cancel a pending order after customer confirmation.
+  const handleCancel = (order) => {
+    const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn hủy đơn hàng ${order.id}?`
+    );
+
+    if (!confirmed) return;
+
+    dispatch(
+      cancelCustomerOrder({
+        orderId: order.id,
+        userId: currentUser.id,
+      })
+    );
   };
 
   return (
@@ -98,6 +122,13 @@ function OrderHistoryPage() {
         </Alert>
       )}
 
+      {/* Cancel error state */}
+      {!loading && cancelError && (
+        <Alert variant="danger" className="text-center">
+          {cancelError}
+        </Alert>
+      )}
+
       {/* Empty state */}
       {!loading && !error && orders.length === 0 && (
         <Alert variant="info" className="text-center py-4">
@@ -125,9 +156,24 @@ function OrderHistoryPage() {
                   </div>
                 </div>
 
-                <Badge bg={getStatusVariant(order.status)}>
-                  {order.status || 'Không xác định'}
-                </Badge>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <Badge bg={getStatusVariant(order.status)}>
+                    {order.status || 'Không xác định'}
+                  </Badge>
+
+                  {order.status === 'Pending' && (
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      disabled={Boolean(cancellingOrderId)}
+                      onClick={() => handleCancel(order)}
+                    >
+                      {cancellingOrderId === order.id
+                        ? 'Đang hủy...'
+                        : 'Hủy đơn hàng'}
+                    </Button>
+                  )}
+                </div>
               </Card.Header>
 
               <Card.Body>
