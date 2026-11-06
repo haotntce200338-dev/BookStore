@@ -27,7 +27,7 @@
       "categoryId": "cat-1",
       "price": 150000,
       "originalPrice": 180000,
-      "stock": 35,
+      "stock": 34,
       "image": "https://picsum.photos/300/400?random=1",
       "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap.",
       "isDeleted": false
@@ -39,7 +39,7 @@
       "categoryId": "cat-3",
       "price": 79000,
       "originalPrice": 95000,
-      "stock": 50,
+      "stock": 48,
       "image": "https://picsum.photos/300/400?random=2",
       "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
       "isDeleted": false
@@ -61,7 +61,7 @@
         }
       ],
       "totalAmount": 300000,
-      "status": "Pending",
+      "status": "Delivered",
       "orderDate": "2026-10-24T10:00:00Z"
     },
     {
@@ -105,6 +105,26 @@
       "totalAmount": 308000,
       "status": "Delivered",
       "orderDate": "2026-10-26T09:15:00Z"
+    },
+    {
+      "id": "LsPah12cdoA",
+      "userId": "u-2",
+      "customerName": "Anh Tuấn",
+      "phone": "0987654321",
+      "address": "123123",
+      "note": "123",
+      "paymentMethod": "cod",
+      "items": [
+        {
+          "bookId": "b-102",
+          "title": "Nhà Giả Kim",
+          "price": 79000,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 79000,
+      "status": "Cancelled",
+      "orderDate": "2026-11-06T13:36:18.081Z"
     }
   ],
   "users": [
@@ -124,5 +144,6 @@
       "role": "customer",
       "isDeleted": false
     }
-  ]
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }

@@ -79,12 +79,21 @@ const ProtectedRoute = ({ allowedRoles = ['admin'], children }) => {
 };
 
 /**
- * Route guard that prevents 'admin' accounts from accessing customer cart/checkout.
- * Guests and customers are permitted.
+ * Route guard for customer shopping cart & checkout.
+ * 1. Blocks unauthenticated guest users -> redirects to /login (with return location).
+ * 2. Blocks 'admin' accounts from shopping.
+ * 3. Permits only authenticated customers.
  */
 export const CustomerOnlyRoute = ({ children }) => {
-  const { currentUser } = useSelector((state) => state.auth);
+  const location = useLocation();
+  const { isAuthenticated, currentUser } = useSelector((state) => state.auth);
 
+  // Case 1: Unauthenticated guest user -> Redirect to login
+  if (!isAuthenticated || !currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Case 2: Admin user -> Block from shopping
   if (currentUser?.role === 'admin') {
     return (
       <Container className="my-5">
@@ -120,6 +129,7 @@ export const CustomerOnlyRoute = ({ children }) => {
     );
   }
 
+  // Case 3: Authenticated customer -> permit access
   return children ? children : <Outlet />;
 };
 
