@@ -14,13 +14,18 @@ const ERROR_MESSAGE =
  *
  * @returns {Promise<Array>} List of books returned by the API.
  */
+/**
+ * Fetch ALL books from JSON Server (including soft-deleted).
+ * Admin needs the full list to generate correct sequential book codes
+ * and to manage soft-deleted books. Filtering for public display
+ * is done at the component level.
+ */
 export const fetchBooks = createAsyncThunk(
   'books/fetchBooks',
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(API_URL);
-      // Filter out soft-deleted books if any
-      return response.data.filter((book) => !book.isDeleted);
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || ERROR_MESSAGE
