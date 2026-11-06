@@ -1,0 +1,181 @@
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Container,
+  Spinner,
+} from 'react-bootstrap';
+
+import { fetchCustomerOrders } from './orderSlice';
+
+// Format price into Vietnamese currency.
+function formatPrice(price) {
+  return Number(price || 0).toLocaleString('vi-VN') + ' đ';
+}
+
+// Format order date.
+function formatDate(date) {
+  const orderDate = new Date(date);
+
+  if (Number.isNaN(orderDate.getTime())) {
+    return 'Không xác định';
+  }
+
+  return orderDate.toLocaleString('vi-VN');
+}
+
+// Get badge color based on order status.
+function getStatusVariant(status) {
+  switch (status) {
+    case 'Pending':
+      return 'warning';
+    case 'Processing':
+      return 'primary';
+    case 'Shipped':
+      return 'info';
+    case 'Delivered':
+      return 'success';
+    case 'Cancelled':
+    case 'Canceled':
+      return 'danger';
+    default:
+      return 'secondary';
+  }
+}
+
+function OrderHistoryPage() {
+  const dispatch = useDispatch();
+
+  const { currentUser } = useSelector((state) => state.auth);
+
+  const { orders, loading, error } = useSelector(
+    (state) => state.orders
+  );
+
+  // Fetch orders when the page opens.
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch(fetchCustomerOrders(currentUser.id));
+    }
+  }, [dispatch, currentUser?.id]);
+
+  const handleRetry = () => {
+    if (currentUser?.id) {
+      dispatch(fetchCustomerOrders(currentUser.id));
+    }
+  };
+
+  return (
+    <Container className="my-4">
+      <div className="mb-4">
+        <h2 className="fw-bold">Lịch sử đơn hàng</h2>
+        <p className="text-muted mb-0">
+          Xin chào, {currentUser?.fullName || currentUser?.username}.
+          Đây là danh sách đơn hàng của bạn.
+        </p>
+      </div>
+
+      {/* Loading state */}
+      {loading && (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" />
+          <p className="text-muted mt-3">
+            Đang tải lịch sử đơn hàng...
+          </p>
+        </div>
+      )}
+
+      {/* Error state */}
+      {!loading && error && (
+        <Alert variant="danger" className="text-center">
+          <p className="mb-3">{error}</p>
+          <Button variant="outline-danger" onClick={handleRetry}>
+            Thử lại
+          </Button>
+        </Alert>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && orders.length === 0 && (
+        <Alert variant="info" className="text-center py-4">
+          <h5 className="fw-bold">Bạn chưa có đơn hàng nào.</h5>
+          <p className="mb-0">
+            Các đơn hàng đã đặt sẽ được hiển thị tại đây.
+          </p>
+        </Alert>
+      )}
+
+      {/* Order list */}
+      {!loading && !error && orders.length > 0 && (
+        <>
+          <div className="d-flex justify-content-between mb-3">
+            <strong>Tổng số đơn hàng: {orders.length}</strong>
+          </div>
+
+          {orders.map((order) => (
+            <Card key={order.id} className="shadow-sm mb-3">
+              <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                  <strong>Mã đơn hàng: {order.id}</strong>
+                  <div className="small text-muted mt-1">
+                    Ngày đặt: {formatDate(order.orderDate)}
+                  </div>
+                </div>
+
+                <Badge bg={getStatusVariant(order.status)}>
+                  {order.status || 'Không xác định'}
+                </Badge>
+              </Card.Header>
+
+              <Card.Body>
+                <h6 className="fw-bold mb-3">Sản phẩm đã đặt</h6>
+
+                {Array.isArray(order.items) && order.items.length > 0 ? (
+                  order.items.map((item, index) => (
+                    <div
+                      key={`${order.id}-${item.bookId || index}`}
+                      className="d-flex justify-content-between align-items-center border-bottom py-2 gap-3"
+                    >
+                      <div>
+                        <div className="fw-semibold">
+                          {item.title}
+                        </div>
+                        <small className="text-muted">
+                          Số lượng: {item.quantity}
+                        </small>
+                      </div>
+
+                      <span className="text-nowrap">
+                        {formatPrice(
+                          Number(item.price) * Number(item.quantity)
+                        )}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted">
+                    Không có thông tin sản phẩm.
+                  </p>
+                )}
+
+                <div className="text-end mt-3">
+                  <span className="text-muted me-2">
+                    Tổng tiền:
+                  </span>
+                  <strong className="text-danger fs-5">
+                    {formatPrice(order.totalAmount)}
+                  </strong>
+                </div>
+              </Card.Body>
+            </Card>
+          ))}
+        </>
+      )}
+    </Container>
+  );
+}
+
+export default OrderHistoryPage;

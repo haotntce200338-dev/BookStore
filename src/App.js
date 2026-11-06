@@ -11,6 +11,7 @@ import AdminDashboardPage from './features/admin/AdminDashboardPage';
 import CartPage from './features/cart/CartPage';
 import CheckoutPage from './features/cart/CheckoutPage';
 import CategoryListPage from './features/categories/CategoryListPage';
+import OrderHistoryPage from './features/orders/OrderHistoryPage';
 import './App.css';
 
 const BookDetail = React.lazy(() => import('./features/books/BookDetail'));
@@ -68,7 +69,15 @@ function App() {
                 </CustomerOnlyRoute>
               }
             />
-
+            {/* Customer order history */}
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <OrderHistoryPage />
+                </ProtectedRoute>
+              }
+            />
             {/* ===================== ADMIN PORTAL ===================== */}
             {/* Admin dashboard overview */}
             <Route
