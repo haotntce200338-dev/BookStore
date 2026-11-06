@@ -1,106 +1,119 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Table, Spinner, Alert,
-  Button, Badge, Form, InputGroup, Modal
+  Container, Table, Spinner, Alert, Button,
+  Badge, Form, InputGroup, Modal,
 } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchBooks } from './bookSlice';
+import { fetchCategories } from '../categories/categorySlice';
 import BookFormModal from './BookFormModal';
 import axios from 'axios';
+
+const API_URL = 'http://localhost:3001/books';
 
 const AdminBookListPage = () => {
   const dispatch = useDispatch();
   const { books, booksLoading, booksError } = useSelector((state) => state.books);
-  const { categories } = useSelector((state) => state.categories);
+  const categories = useSelector((state) => state.categories?.categories || []);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createSuccess, setCreateSuccess] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [bookToEdit, setBookToEdit] = useState(null);
+  const [bookToDelete, setBookToDelete] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-
-  // Delete modal state
-  const [bookToDelete, setBookToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState(null);
-
-  // Edit modal state (Update Book Details - Admin)
-  const [bookToEdit, setBookToEdit] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [createSuccess, setCreateSuccess] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   useEffect(() => {
     dispatch(fetchBooks());
+    dispatch(fetchCategories());
   }, [dispatch]);
 
+  // Reload books and close the form after saving.
   const handleCreateSuccess = () => {
+    setShowCreateModal(false);
     setCreateSuccess(true);
     dispatch(fetchBooks());
   };
 
-  // Handlers for Update Book Details
   const handleEditBook = (book) => {
     setBookToEdit(book);
     setUpdateSuccess(false);
     setShowEditModal(true);
   };
 
-  const handleUpdateSuccess = (updatedBook) => {
-    setUpdateSuccess(true);
+  const handleUpdateSuccess = () => {
     setShowEditModal(false);
     setBookToEdit(null);
+    setUpdateSuccess(true);
     dispatch(fetchBooks());
   };
 
-  const activeBooks = (books || []).filter((book) => !book.isDeleted);
+  // Display only books that have not been deleted.
+  const activeBooks = (books || []).filter(
+    (book) => book.isDeleted !== true
+  );
 
-  // Filter books based on search term and selected category
+  // Search by title, author, or book ID.
   const filteredBooks = activeBooks.filter((book) => {
-    const matchesSearch =
-      searchTerm === '' ||
-      book.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.id?.toLowerCase().includes(searchTerm.toLowerCase());
+    const keyword = searchTerm.trim().toLowerCase();
+    const matchesSearch = [
+      book.title, book.author, book.id, book.bookCode,
+    ].some((value) => String(value || '').toLowerCase().includes(keyword));
 
     const matchesCategory =
-      selectedCategory === '' ||
-      book.categoryId === selectedCategory ||
-      book.categoryName === selectedCategory;
+      !selectedCategory ||
+      String(book.categoryId || book.category?.id) === selectedCategory ||
+      categories.some(
+        (cat) =>
+          String(cat.id) === selectedCategory &&
+          cat.name === book.categoryName
+      );
 
     return matchesSearch && matchesCategory;
   });
 
-  const formatPrice = (price) => {
-    if (price === null || price === undefined || price === '') {
-      return 'Chưa cập nhật';
-    }
-    const value = Number(price);
-    return Number.isFinite(value)
-      ? value.toLocaleString('vi-VN') + ' đ'
-      : 'Chưa cập nhật';
-  };
-
   const getCategoryName = (book) => {
-    if (book.category?.name) return book.category.name;
-    if (book.categoryName) return book.categoryName;
-    const found = categories?.find((c) => c.id === book.categoryId);
-    return found ? found.name : book.categoryId || 'Chưa phân loại';
+    const category = categories.find(
+      (cat) => String(cat.id) === String(book.categoryId || book.category?.id)
+    );
+
+    return category?.name || book.category?.name ||
+      book.categoryName || book.categoryId || 'Chưa phân loại';
   };
 
-  // Handle Soft Delete
+  const formatPrice = (price) => {
+    if (price === null || price === undefined || price === '') return '-';
+    const value = Number(price);
+    return Number.isFinite(value) ? `${value.toLocaleString('vi-VN')} đ` : '-';
+  };
+
+  // Soft Delete: update isDeleted instead of removing the record.
   const handleConfirmDelete = async () => {
-    if (!bookToDelete) return;
+    if (!bookToDelete || deleting) return;
+
     setDeleting(true);
-    setDeleteError(null);
+    setDeleteError('');
+
     try {
-      await axios.patch(`http://localhost:3001/books/${bookToDelete.id}`, {
-        isDeleted: true,
-      });
-      setDeleting(false);
+      await axios.patch(
+        `${API_URL}/${encodeURIComponent(bookToDelete.id)}`,
+        { isDeleted: true }
+      );
+
       setBookToDelete(null);
+      setDeleteSuccess(true);
       dispatch(fetchBooks());
-    } catch (err) {
+    } catch (error) {
+      console.error('Delete book error:', error);
+      setDeleteError('Không thể xóa sách. Vui lòng thử lại!');
+    } finally {
       setDeleting(false);
-      setDeleteError('Có lỗi xảy ra khi xóa sách. Vui lòng thử lại.');
     }
   };
 
@@ -111,18 +124,18 @@ const AdminBookListPage = () => {
         <div>
           <h2 className="fw-bold text-dark mb-1">📚 Quản Lý Kho Sách (Admin)</h2>
           <p className="text-muted small mb-0">
-            Xem, thêm mới, cập nhật giá tồn kho và quản trị toàn bộ sách trong hệ thống.
+            Xem, thêm, cập nhật và quản lý sách trong hệ thống.
           </p>
         </div>
 
         <div className="d-flex align-items-center gap-2">
           {!booksLoading && !booksError && (
-            <span className="badge bg-light text-dark border px-3 py-2">
-              Tổng kho: <strong>{activeBooks.length}</strong> cuốn sách
-            </span>
+            <Badge bg="light" text="dark" className="border p-2">
+              Tổng kho: {activeBooks.length} cuốn sách
+            </Badge>
           )}
           <Button
-            variant="primary"
+            disabled={booksLoading}
             onClick={() => {
               setCreateSuccess(false);
               setShowCreateModal(true);
@@ -133,47 +146,46 @@ const AdminBookListPage = () => {
         </div>
       </div>
 
-      {createSuccess && (
-        <Alert variant="success" dismissible onClose={() => setCreateSuccess(false)}>
-          Thêm sách mới vào kho thành công!
-        </Alert>
+      {/* Notifications */}
+      {[
+        [createSuccess, setCreateSuccess, 'Thêm sách mới thành công!'],
+        [updateSuccess, setUpdateSuccess, 'Cập nhật sách thành công!'],
+        [deleteSuccess, setDeleteSuccess, 'Xóa sách thành công!'],
+      ].map(([show, setter, message], index) =>
+        show && (
+          <Alert key={index} variant="success" dismissible onClose={() => setter(false)}>
+            {message}
+          </Alert>
+        )
       )}
 
-      {/* Update Success Alert */}
-      {updateSuccess && (
-        <Alert variant="success" dismissible onClose={() => setUpdateSuccess(false)}>
-          Cập nhật thông tin sách thành công!
-        </Alert>
-      )}
-
-      {/* Filter & Search Bar */}
+      {/* Search and Category Filter */}
       <div className="bg-light p-3 rounded mb-4 border">
         <div className="row g-3">
-          <div className="col-12 col-md-6 col-lg-5">
+          <div className="col-12 col-md-6">
             <InputGroup>
               <InputGroup.Text>🔍</InputGroup.Text>
               <Form.Control
-                type="text"
-                placeholder="Tìm kiếm theo tên sách, tác giả, mã sách..."
+                placeholder="Tìm theo tên sách, tác giả, mã sách..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </InputGroup>
           </div>
-          <div className="col-12 col-md-4 col-lg-4">
+
+          <div className="col-12 col-md-4">
             <Form.Select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
               <option value="">-- Tất cả thể loại --</option>
-              {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </Form.Select>
           </div>
-          <div className="col-12 col-md-2 col-lg-3 text-md-end">
+
+          <div className="col-12 col-md-2">
             {(searchTerm || selectedCategory) && (
               <Button
                 variant="outline-secondary"
@@ -190,46 +202,36 @@ const AdminBookListPage = () => {
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading and Error */}
       {booksLoading && (
-        <div className="text-center py-5 my-4">
-          <Spinner animation="border" variant="primary" role="status" />
-          <p className="mt-3 text-muted small">Đang tải danh sách sách, vui lòng chờ...</p>
+        <div className="text-center py-5">
+          <Spinner animation="border" />
+          <p className="text-muted mt-2">Đang tải danh sách sách...</p>
         </div>
       )}
 
-      {/* Error State */}
       {!booksLoading && booksError && (
-        <Alert variant="danger" className="text-center py-4 my-4 shadow-sm">
-          <div className="fs-3 mb-2">⚠️</div>
-          <Alert.Heading className="fs-5 fw-bold">Không thể tải dữ liệu sách</Alert.Heading>
-          <p className="small mb-3">{booksError}</p>
-          <Button variant="danger" size="sm" onClick={() => dispatch(fetchBooks())}>
-            Thử lại ngay
+        <Alert variant="danger">
+          {booksError}
+          <Button size="sm" variant="danger" className="ms-3"
+            onClick={() => dispatch(fetchBooks())}>
+            Thử lại
           </Button>
         </Alert>
       )}
 
-      {/* Empty State */}
+      {/* Empty List */}
       {!booksLoading && !booksError && filteredBooks.length === 0 && (
-        <Alert variant="info" className="text-center py-5 my-4 shadow-sm">
-          <div className="fs-1 mb-2">📖</div>
-          <Alert.Heading className="fs-5 fw-bold">
-            Không tìm thấy cuốn sách nào
-          </Alert.Heading>
-          <p className="text-muted small mb-0">
-            {searchTerm || selectedCategory
-              ? 'Không có sách nào khớp với từ khóa hoặc thể loại bạn chọn.'
-              : 'Hiện tại hệ thống chưa có cuốn sách nào trong kho.'}
-          </p>
+        <Alert variant="info" className="text-center">
+          Không tìm thấy cuốn sách nào.
         </Alert>
       )}
 
-      {/* Admin Books Table */}
+      {/* Books Table */}
       {!booksLoading && !booksError && filteredBooks.length > 0 && (
-        <div className="table-responsive shadow-sm border rounded">
+        <div className="table-responsive border rounded shadow-sm">
           <Table striped hover className="align-middle text-center mb-0">
-            <thead className="table-dark text-nowrap">
+            <thead className="table-dark">
               <tr>
                 <th>Mã sách</th>
                 <th>Hình ảnh</th>
@@ -243,71 +245,64 @@ const AdminBookListPage = () => {
                 <th>Thao tác</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredBooks.map((book) => {
                 const stock = Number(book.stock);
-                const validStock =
-                  book.stock !== null &&
-                  book.stock !== undefined &&
-                  book.stock !== '' &&
+                const validStock = book.stock !== '' &&
+                  book.stock !== null && book.stock !== undefined &&
                   Number.isFinite(stock);
 
                 return (
                   <tr key={book.id}>
                     <td><code>{book.bookCode || book.id}</code></td>
+
                     <td>
                       {book.image ? (
-                        <img
-                          src={book.image}
-                          alt={book.title}
-                          width="45"
-                          height="60"
+                        <img src={book.image} alt={book.title}
+                          width="45" height="60"
                           className="rounded border"
-                          style={{ objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <span className="text-muted small">Không có</span>
-                      )}
+                          style={{ objectFit: 'cover' }} />
+                      ) : '-'}
                     </td>
-                    <td className="fw-semibold text-start" style={{ maxWidth: '240px' }}>
-                      <span className="text-truncate d-block" title={book.title}>
-                        {book.title || 'Chưa cập nhật'}
-                      </span>
+
+                    <td className="text-start fw-semibold">
+                      {book.title || 'Chưa cập nhật'}
                     </td>
-                    <td className="small text-muted">{book.author || 'Chưa cập nhật'}</td>
+
+                    <td>{book.author || 'Chưa cập nhật'}</td>
+
                     <td>
                       <Badge bg="light" text="dark" className="border">
                         {getCategoryName(book)}
                       </Badge>
                     </td>
-                    <td className="text-muted small">
-                      {book.originalPrice ? formatPrice(book.originalPrice) : '-'}
-                    </td>
+
+                    <td>{formatPrice(book.originalPrice)}</td>
                     <td className="fw-bold text-danger">{formatPrice(book.price)}</td>
+                    <td>{validStock ? stock : 0}</td>
+
                     <td>
-                      <strong>{validStock ? stock : 0}</strong>
-                    </td>
-                    <td>
-                      <Badge bg={!validStock || stock <= 0 ? 'danger' : stock <= 10 ? 'warning' : 'success'}>
-                        {!validStock || stock <= 0 ? 'Hết hàng' : stock <= 10 ? 'Sắp hết' : 'Còn hàng'}
+                      <Badge bg={
+                        !validStock || stock <= 0 ? 'danger' :
+                        stock <= 10 ? 'warning' : 'success'
+                      }>
+                        {!validStock || stock <= 0 ? 'Hết hàng' :
+                          stock <= 10 ? 'Sắp hết' : 'Còn hàng'}
                       </Badge>
                     </td>
+
                     <td>
                       <div className="d-flex justify-content-center gap-1">
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => handleEditBook(book)}
-                          title="Chỉnh sửa thông tin sách"
-                        >
+                        <Button size="sm" variant="outline-primary"
+                          onClick={() => handleEditBook(book)}>
                           ✏️ Sửa
                         </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => setBookToDelete(book)}
-                          title="Xóa mềm sách"
-                        >
+                        <Button size="sm" variant="outline-danger"
+                          onClick={() => {
+                            setDeleteError('');
+                            setBookToDelete(book);
+                          }}>
                           🗑️
                         </Button>
                       </div>
@@ -320,14 +315,13 @@ const AdminBookListPage = () => {
         </div>
       )}
 
-      {/* Create New Book Modal */}
+      {/* Create and Update Forms */}
       <BookFormModal
         show={showCreateModal}
         onHide={() => setShowCreateModal(false)}
         onSuccess={handleCreateSuccess}
       />
 
-      {/* Update Book Details Modal */}
       <BookFormModal
         show={showEditModal}
         onHide={() => {
@@ -338,29 +332,37 @@ const AdminBookListPage = () => {
         bookToEdit={bookToEdit}
       />
 
-      {/* Delete Confirmation Modal */}
-      <Modal show={!!bookToDelete} onHide={() => setBookToDelete(null)} centered>
-        <Modal.Header closeButton className="bg-danger text-white">
-          <Modal.Title className="h6 mb-0">⚠️ Xác nhận xóa sách</Modal.Title>
+      {/* Delete Confirmation */}
+      <Modal
+        show={!!bookToDelete}
+        onHide={() => !deleting && setBookToDelete(null)}
+        centered
+        backdrop={deleting ? 'static' : true}
+        keyboard={!deleting}
+      >
+        <Modal.Header closeButton={!deleting} className="bg-danger text-white">
+          <Modal.Title className="h6">Xác nhận xóa sách</Modal.Title>
         </Modal.Header>
-        <Modal.Body className="py-4">
-          <p className="mb-2">
-            Bạn có chắc chắn muốn xóa cuốn sách sau khỏi kho sách hiển thị không?
+
+        <Modal.Body>
+          <p>Bạn có chắc chắn muốn xóa sách này không?</p>
+          <strong>{bookToDelete?.title}</strong>
+          <p className="small text-muted mt-2">
+            Sách sẽ được đánh dấu <code>isDeleted: true</code>,
+            không bị xóa khỏi database.
           </p>
-          <div className="p-3 bg-light rounded border">
-            <h6 className="fw-bold text-dark mb-1">{bookToDelete?.title}</h6>
-            <div className="text-muted small">Mã: {bookToDelete?.id} | Tác giả: {bookToDelete?.author}</div>
-          </div>
-          <small className="text-muted d-block mt-2">
-            * Thao tác này sẽ xóa mềm sách (đánh dấu <code>isDeleted: true</code>) để bảo toàn lịch sử đơn hàng cũ.
-          </small>
-          {deleteError && <Alert variant="danger" className="mt-3 mb-0 small">{deleteError}</Alert>}
+          {deleteError && <Alert variant="danger">{deleteError}</Alert>}
         </Modal.Body>
+
         <Modal.Footer>
-          <Button variant="secondary" size="sm" onClick={() => setBookToDelete(null)} disabled={deleting}>
-            Hủy bỏ
+          <Button variant="secondary" size="sm"
+            disabled={deleting}
+            onClick={() => setBookToDelete(null)}>
+            Hủy
           </Button>
-          <Button variant="danger" size="sm" onClick={handleConfirmDelete} disabled={deleting}>
+          <Button variant="danger" size="sm"
+            disabled={deleting}
+            onClick={handleConfirmDelete}>
             {deleting ? 'Đang xóa...' : 'Xác nhận xóa'}
           </Button>
         </Modal.Footer>
