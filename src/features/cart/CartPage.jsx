@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Button, Badge, Modal, Toast, ToastContainer } from 'react-bootstrap';
-import { useSelector, useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { updateQuantity, removeFromCart } from './cartSlice';
-import CartItemRow from './CartItemRow';
-import CartSummary from './CartSummary';
+import React, { useState } from "react";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Button,
+  Badge,
+  Modal,
+  Toast,
+  ToastContainer,
+} from "react-bootstrap";
+import { useSelector, useDispatch } from "react-redux";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { updateQuantity, removeFromCart } from "./cartSlice";
+import CartItemRow from "./CartItemRow";
+import CartSummary from "./CartSummary";
 
 const CartPage = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
 
   // Read auth and shopping cart data from Redux state
-  const { currentUser } = useSelector((state) => state.auth);
-  const { items, totalQuantity, totalAmount } = useSelector((state) => state.cart);
+  const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
+  const { items, totalQuantity, totalAmount } = useSelector(
+    (state) => state.cart,
+  );
 
   // Modal confirmation state for removing an item
   const [deleteModal, setDeleteModal] = useState({
@@ -22,18 +35,29 @@ const CartPage = () => {
   // Toast feedback state
   const [toastConfig, setToastConfig] = useState({
     show: false,
-    message: '',
+    message: "",
   });
 
-  // If logged-in user is an admin, shopping cart is not applicable
-  if (currentUser?.role === 'admin') {
+  // Case 1: Unauthenticated guest user -> redirect to /login
+  if (!isAuthenticated || !currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Case 2: If logged-in user is an admin, shopping cart is not applicable
+  if (currentUser?.role === "admin") {
     return (
       <Container className="my-5 text-center">
-        <Card className="p-4 p-md-5 shadow-sm border-0 mx-auto" style={{ maxWidth: '600px' }}>
+        <Card
+          className="p-4 p-md-5 shadow-sm border-0 mx-auto"
+          style={{ maxWidth: "600px" }}
+        >
           <div className="fs-1 mb-3">🛡️</div>
-          <h4 className="fw-bold text-dark mb-2">Tài khoản Quản trị viên (Admin)</h4>
+          <h4 className="fw-bold text-dark mb-2">
+            Tài khoản Quản trị viên (Admin)
+          </h4>
           <p className="text-muted mb-4">
-            Tài khoản Admin dành riêng cho quản trị hệ thống và không sử dụng tính năng giỏ hàng / mua sắm.
+            Tài khoản Admin dành riêng cho quản trị hệ thống và không sử dụng
+            tính năng giỏ hàng / mua sắm.
           </p>
           <div className="d-flex justify-content-center gap-2 flex-wrap">
             <Button as={Link} to="/admin/books" variant="danger">
@@ -90,7 +114,11 @@ const CartPage = () => {
   return (
     <Container className="my-4">
       {/* Toast Notification */}
-      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1080 }}>
+      <ToastContainer
+        position="top-end"
+        className="p-3"
+        style={{ zIndex: 1080 }}
+      >
         <Toast
           show={toastConfig.show}
           onClose={() => setToastConfig((prev) => ({ ...prev, show: false }))}
@@ -99,7 +127,9 @@ const CartPage = () => {
           bg="success"
         >
           <Toast.Header>
-            <strong className="me-auto text-primary">🛒 Giỏ hàng BookStore</strong>
+            <strong className="me-auto text-primary">
+              🛒 Giỏ hàng BookStore
+            </strong>
             <small>Vừa xong</small>
           </Toast.Header>
           <Toast.Body className="text-white small fw-medium">
@@ -112,7 +142,9 @@ const CartPage = () => {
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
           <div className="text-muted small mb-1">
-            <Link to="/" className="text-decoration-none text-secondary">Trang chủ</Link>
+            <Link to="/" className="text-decoration-none text-secondary">
+              Trang chủ
+            </Link>
             <span className="mx-2">/</span>
             <span className="text-dark fw-semibold">Giỏ hàng</span>
           </div>
@@ -128,7 +160,13 @@ const CartPage = () => {
         </div>
 
         {items.length > 0 && (
-          <Button as={Link} to="/" variant="outline-primary" size="sm" className="mt-2 mt-sm-0">
+          <Button
+            as={Link}
+            to="/"
+            variant="outline-primary"
+            size="sm"
+            className="mt-2 mt-sm-0"
+          >
             ← Tiếp tục chọn sách
           </Button>
         )}
@@ -138,11 +176,18 @@ const CartPage = () => {
       {items.length === 0 ? (
         <Card className="text-center py-5 shadow-sm border-0 bg-white my-4">
           <Card.Body className="py-4">
-            <div className="mb-3" style={{ fontSize: '4.5rem' }}>🛒</div>
-            <h4 className="fw-bold text-dark mb-2">Giỏ hàng của bạn đang trống</h4>
-            <p className="text-secondary mb-4 mx-auto" style={{ maxWidth: '480px' }}>
-              Chưa có cuốn sách nào được chọn trong giỏ hàng. Hãy dạo quanh BookStore để tìm kiếm
-              những cuốn sách yêu thích nhé!
+            <div className="mb-3" style={{ fontSize: "4.5rem" }}>
+              🛒
+            </div>
+            <h4 className="fw-bold text-dark mb-2">
+              Giỏ hàng của bạn đang trống
+            </h4>
+            <p
+              className="text-secondary mb-4 mx-auto"
+              style={{ maxWidth: "480px" }}
+            >
+              Chưa có cuốn sách nào được chọn trong giỏ hàng. Hãy dạo quanh
+              BookStore để tìm kiếm những cuốn sách yêu thích nhé!
             </p>
             <Button
               as={Link}
@@ -150,7 +195,7 @@ const CartPage = () => {
               variant="primary"
               size="lg"
               className="px-4 fw-semibold shadow-sm"
-              style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
+              style={{ backgroundColor: "#0D6EFD", borderColor: "#0D6EFD" }}
             >
               📚 Khám phá sách ngay
             </Button>
@@ -208,7 +253,7 @@ const CartPage = () => {
         </Modal.Header>
         <Modal.Body>
           <p className="mb-0">
-            Bạn có chắc chắn muốn xóa cuốn sách{' '}
+            Bạn có chắc chắn muốn xóa cuốn sách{" "}
             <strong>"{deleteModal.item?.title}"</strong> khỏi giỏ hàng không?
           </p>
         </Modal.Body>

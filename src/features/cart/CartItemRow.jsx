@@ -1,12 +1,12 @@
-import React from 'react';
-import { Button, InputGroup, Form } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Button, InputGroup, Form } from "react-bootstrap";
+import { Link } from "react-router-dom";
 
 const DEFAULT_COVER =
-  'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80';
+  "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80";
 
 const formatPrice = (price) => {
-  return Number(price || 0).toLocaleString('vi-VN') + ' đ';
+  return Number(price || 0).toLocaleString("vi-VN") + " đ";
 };
 
 const CartItemRow = ({ item, onQuantityChange, onRemoveRequest }) => {
@@ -47,10 +47,10 @@ const CartItemRow = ({ item, onQuantityChange, onRemoveRequest }) => {
               onError={handleImageError}
               className="rounded shadow-sm border"
               style={{
-                width: '100%',
-                maxWidth: '75px',
-                height: '100px',
-                objectFit: 'cover',
+                width: "100%",
+                maxWidth: "75px",
+                height: "100px",
+                objectFit: "cover",
               }}
             />
           </Link>
@@ -62,12 +62,12 @@ const CartItemRow = ({ item, onQuantityChange, onRemoveRequest }) => {
             to={`/books/${item.id}`}
             className="text-decoration-none text-dark fw-bold hover-primary d-block mb-1 line-clamp-2"
             title={item.title}
-            style={{ fontSize: '0.95rem', lineHeight: '1.4' }}
+            style={{ fontSize: "0.95rem", lineHeight: "1.4" }}
           >
             {item.title}
           </Link>
           <div className="text-secondary small mb-1">
-            {item.author ? `Tác giả: ${item.author}` : 'Tác giả chưa cập nhật'}
+            {item.author ? `Tác giả: ${item.author}` : "Tác giả chưa cập nhật"}
           </div>
           <div className="d-flex align-items-baseline gap-2">
             <span className="text-danger fw-semibold">
@@ -85,7 +85,7 @@ const CartItemRow = ({ item, onQuantityChange, onRemoveRequest }) => {
         {/* Quantity Controller */}
         <div className="col-6 col-sm-3 col-md-2">
           <div className="d-flex flex-column align-items-start align-items-sm-center">
-            <InputGroup size="sm" style={{ maxWidth: '115px' }}>
+            <InputGroup size="sm" style={{ maxWidth: "115px" }}>
               <Button
                 variant="outline-secondary"
                 disabled={item.quantity <= 1}
@@ -116,7 +116,10 @@ const CartItemRow = ({ item, onQuantityChange, onRemoveRequest }) => {
               </Button>
             </InputGroup>
             {isMaxStock && (
-              <small className="text-danger mt-1 text-center" style={{ fontSize: '0.72rem' }}>
+              <small
+                className="text-danger mt-1 text-center"
+                style={{ fontSize: "0.72rem" }}
+              >
                 Tối đa trong kho ({item.stock})
               </small>
             )}

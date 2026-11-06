@@ -57,8 +57,20 @@ const CartSummary = ({ totalQuantity, totalAmount }) => {
             (Đã bao gồm thuế GTGT nếu có)
           </div>
 
-          {/* Action Button: Back to Catalog */}
+          {/* Action Buttons */}
           <div className="d-grid gap-2">
+            <Button
+              as={Link}
+              to="/checkout"
+              variant="primary"
+              size="lg"
+              className="fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm"
+              style={{ backgroundColor: "#0D6EFD", borderColor: "#0D6EFD" }}
+            >
+              <span>💳</span>
+              <span>Tiến hành đặt hàng</span>
+            </Button>
+
             <Button
               as={Link}
               to="/"
