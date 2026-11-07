@@ -10,6 +10,7 @@ import BookFormModal from './BookFormModal';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:3001/books';
+const NO_COVER = 'https://placehold.co/100x140?text=No+Cover';
 
 const AdminBookListPage = () => {
   const dispatch = useDispatch();
@@ -72,7 +73,7 @@ const AdminBookListPage = () => {
       categories.some(
         (cat) =>
           String(cat.id) === selectedCategory &&
-          cat.name === book.categoryName
+          String(cat.name || '').trim().toLowerCase() === String(book.categoryName || '').trim().toLowerCase()
       );
 
     return matchesSearch && matchesCategory;
@@ -259,11 +260,21 @@ const AdminBookListPage = () => {
 
                     <td>
                       {book.image ? (
-                        <img src={book.image} alt={book.title}
-                          width="45" height="60"
+                        <img
+                          src={book.image}
+                          alt={book.title || 'Ảnh bìa'}
+                          width="45"
+                          height="60"
                           className="rounded border"
-                          style={{ objectFit: 'cover' }} />
-                      ) : '-'}
+                          style={{ objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = NO_COVER;
+                          }}
+                        />
+                      ) : (
+                        <span className="text-muted small">-</span>
+                      )}
                     </td>
 
                     <td className="text-start fw-semibold">
