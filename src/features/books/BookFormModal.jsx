@@ -46,7 +46,7 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
     setFormData(bookToEdit ? {
       title: String(bookToEdit.title || ''),
       author: String(bookToEdit.author || ''),
-      categoryName: String(bookToEdit.category?.name || bookToEdit.categoryName || bookToEdit.categoryId || ''),
+      categoryName: getBookCategoryName(bookToEdit, categories),
       originalPrice: String(bookToEdit.originalPrice ?? ''),
       price: String(bookToEdit.price ?? ''),
       stock: String(bookToEdit.stock ?? '10'),
@@ -57,7 +57,7 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
     setSubmitting(false);
     setErrorMessage(null);
     setCategoryTouched(false);
-  }, [show, bookToEdit]);
+  }, [show, bookToEdit, categories]);
 
   // Resolve the category name when categories load after the modal opens.
   useEffect(() => {
@@ -96,6 +96,12 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
     if (!form.checkValidity()) {
       e.stopPropagation();
       setValidated(true);
+      return;
+    }
+
+    if (!formData.title.trim() || !formData.author.trim()) {
+      setValidated(true);
+      setErrorMessage('Tên sách và tác giả không được để trống hoặc chỉ chứa khoảng trắng.');
       return;
     }
 
@@ -200,7 +206,20 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
             <Col md={6}>
               <Form.Group controlId="bookCategory">
                 <Form.Label className="fw-semibold">Danh mục / Thể loại:</Form.Label>
-                <Form.Control type="text" name="categoryName" value={formData.categoryName} onChange={handleChange} placeholder="Ví dụ: Công nghệ, Tiểu thuyết, Kinh tế..." disabled={submitting} />
+                <Form.Control
+                  type="text"
+                  name="categoryName"
+                  list="categoryOptions"
+                  value={formData.categoryName}
+                  onChange={handleChange}
+                  placeholder="Chọn hoặc nhập thể loại..."
+                  disabled={submitting}
+                />
+                <datalist id="categoryOptions">
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name} />
+                  ))}
+                </datalist>
               </Form.Group>
             </Col>
             <Col md={12}>
