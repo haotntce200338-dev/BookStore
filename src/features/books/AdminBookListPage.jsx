@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Container, Table, Spinner, Alert, Button,
-  Badge, Form, InputGroup, Modal,
+  Badge, Modal,
 } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchBooks } from './bookSlice';
@@ -22,8 +22,6 @@ const AdminBookListPage = () => {
   const [bookToEdit, setBookToEdit] = useState(null);
   const [bookToDelete, setBookToDelete] = useState(null);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [createSuccess, setCreateSuccess] = useState(false);
@@ -59,25 +57,6 @@ const AdminBookListPage = () => {
   const activeBooks = (books || []).filter(
     (book) => book.isDeleted !== true
   );
-
-  // Search by title, author, or book ID.
-  const filteredBooks = activeBooks.filter((book) => {
-    const keyword = searchTerm.trim().toLowerCase();
-    const matchesSearch = [
-      book.title, book.author, book.id, book.bookCode,
-    ].some((value) => String(value || '').toLowerCase().includes(keyword));
-
-    const matchesCategory =
-      !selectedCategory ||
-      String(book.categoryId || book.category?.id) === selectedCategory ||
-      categories.some(
-        (cat) =>
-          String(cat.id) === selectedCategory &&
-          String(cat.name || '').trim().toLowerCase() === String(book.categoryName || '').trim().toLowerCase()
-      );
-
-    return matchesSearch && matchesCategory;
-  });
 
   const getCategoryName = (book) => {
     const category = categories.find(
@@ -160,49 +139,6 @@ const AdminBookListPage = () => {
         )
       )}
 
-      {/* Search and Category Filter */}
-      <div className="bg-light p-3 rounded mb-4 border">
-        <div className="row g-3">
-          <div className="col-12 col-md-6">
-            <InputGroup>
-              <InputGroup.Text>🔍</InputGroup.Text>
-              <Form.Control
-                placeholder="Tìm theo tên sách, tác giả, mã sách..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </InputGroup>
-          </div>
-
-          <div className="col-12 col-md-4">
-            <Form.Select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">-- Tất cả thể loại --</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </Form.Select>
-          </div>
-
-          <div className="col-12 col-md-2">
-            {(searchTerm || selectedCategory) && (
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('');
-                }}
-              >
-                Xóa bộ lọc
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Loading and Error */}
       {booksLoading && (
         <div className="text-center py-5">
@@ -222,14 +158,14 @@ const AdminBookListPage = () => {
       )}
 
       {/* Empty List */}
-      {!booksLoading && !booksError && filteredBooks.length === 0 && (
+      {!booksLoading && !booksError && activeBooks.length === 0 && (
         <Alert variant="info" className="text-center">
-          Không tìm thấy cuốn sách nào.
+          Hiện tại hệ thống chưa có cuốn sách nào trong kho.
         </Alert>
       )}
 
       {/* Books Table */}
-      {!booksLoading && !booksError && filteredBooks.length > 0 && (
+      {!booksLoading && !booksError && activeBooks.length > 0 && (
         <div className="table-responsive border rounded shadow-sm">
           <Table striped hover className="align-middle text-center mb-0">
             <thead className="table-dark">
@@ -248,7 +184,7 @@ const AdminBookListPage = () => {
             </thead>
 
             <tbody>
-              {filteredBooks.map((book) => {
+              {activeBooks.map((book) => {
                 const stock = Number(book.stock);
                 const validStock = book.stock !== '' &&
                   book.stock !== null && book.stock !== undefined &&
