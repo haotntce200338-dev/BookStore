@@ -11,6 +11,7 @@ const AdminDashboardPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
 
   const fetchData = async () => {
     setLoading(true);
@@ -40,6 +41,18 @@ const AdminDashboardPage = () => {
   const outOfStockBooks = activeBooks.filter((b) => Number(b.stock) <= 0);
   const pendingOrders = orders.filter((o) => o.status === 'Pending');
   const deliveredOrders = orders.filter((o) => o.status === 'Delivered');
+  const cancelledOrders = orders.filter(
+    (o) => o.status === 'Cancelled' || o.status === 'Canceled'
+  );
+
+  // Filter orders by active status tab
+  const filteredOrders = orders.filter((o) => {
+    if (selectedStatus === 'ALL') return true;
+    if (selectedStatus === 'Cancelled') {
+      return o.status === 'Cancelled' || o.status === 'Canceled';
+    }
+    return o.status === selectedStatus;
+  });
 
   // Total revenue is calculated only from delivered/completed orders
   const totalRevenue = deliveredOrders.reduce(
@@ -51,37 +64,14 @@ const AdminDashboardPage = () => {
     return Number(price || 0).toLocaleString('vi-VN') + ' đ';
   };
 
-  // Quick order status update
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
-    try {
-      await axios.patch(`http://localhost:3001/orders/${orderId}`, {
-        status: newStatus,
-      });
-      fetchData();
-    } catch (err) {
-      alert('Không thể cập nhật trạng thái đơn hàng.');
-    }
-  };
-
   return (
     <Container className="my-4">
       {/* Page Title & Subtitle */}
-      <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
-        <div>
-          <h2 className="fw-bold text-dark mb-1">📊 Bảng Điều Khiển Quản Trị (Admin Dashboard)</h2>
-          <p className="text-muted small mb-0">
-            Tổng quan hiệu suất bán hàng, trạng thái kho sách và quản lý vận hành BookStore.
-          </p>
-        </div>
-
-        <div className="d-flex gap-2">
-          <Button variant="outline-primary" size="sm" onClick={fetchData} disabled={loading}>
-            🔄 Làm mới số liệu
-          </Button>
-          <Button as={Link} to="/admin/books" variant="primary" size="sm">
-            📚 Quản lý kho sách
-          </Button>
-        </div>
+      <div className="mb-4 pb-2 border-bottom">
+        <h2 className="fw-bold text-dark mb-1">📊 Bảng Điều Khiển Quản Trị (Admin Dashboard)</h2>
+        <p className="text-muted small mb-0">
+          Tổng quan hiệu suất bán hàng, trạng thái kho sách và quản lý vận hành BookStore.
+        </p>
       </div>
 
       {loading && (
@@ -124,7 +114,12 @@ const AdminDashboardPage = () => {
 
             {/* Metric 2: Orders */}
             <Col xs={12} sm={6} lg={3}>
-              <Card className="shadow-sm border-0 bg-warning text-dark h-100">
+              <Card
+                className="shadow-sm border-0 bg-warning text-dark h-100"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedStatus('Pending')}
+                title="Bấm để lọc nhanh các đơn chờ duyệt"
+              >
                 <Card.Body className="p-3">
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <span className="small text-uppercase fw-semibold text-dark-50">Tổng đơn hàng</span>
@@ -177,32 +172,54 @@ const AdminDashboardPage = () => {
             </Col>
           </Row>
 
-          {/* Quick Action Navigation Bar */}
-          <div className="p-3 bg-light rounded border mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <span className="fw-semibold small text-muted">
-              ⚡ Phím tắt tác vụ nhanh:
-            </span>
-            <div className="d-flex flex-wrap gap-2">
-              <Button as={Link} to="/admin/books" variant="outline-primary" size="sm">
-                + Quản lý & Thêm sách mới
-              </Button>
-              <Button as={Link} to="/admin/categories" variant="outline-secondary" size="sm">
-                + Quản lý thể loại
-              </Button>
-              <Button as={Link} to="/" variant="outline-dark" size="sm">
-                🌐 Xem giao diện cửa hàng
-              </Button>
-            </div>
-          </div>
-
           {/* Recent Orders Section */}
           <Card className="shadow-sm border">
-            <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                <span>📋</span>
-                <span>Danh Sách Đơn Hàng Gần Đây</span>
-              </h5>
-              <Badge bg="primary">{orders.length} đơn</Badge>
+            <Card.Header className="bg-white py-3">
+              <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                  <span>📋</span>
+                  <span>Danh Sách Đơn Hàng Gần Đây</span>
+                </h5>
+                <Badge bg="secondary" className="px-2 py-1">
+                  Hiển thị: {filteredOrders.length} / {orders.length} đơn
+                </Badge>
+              </div>
+
+              {/* Order Status Filter Tabs */}
+              <div className="d-flex flex-wrap gap-2 pt-2 border-top">
+                <Button
+                  variant={selectedStatus === 'ALL' ? 'primary' : 'outline-secondary'}
+                  size="sm"
+                  className="rounded-pill px-3 fw-semibold"
+                  onClick={() => setSelectedStatus('ALL')}
+                >
+                  Tất cả ({orders.length})
+                </Button>
+                <Button
+                  variant={selectedStatus === 'Pending' ? 'warning' : 'outline-warning'}
+                  size="sm"
+                  className={`rounded-pill px-3 fw-semibold ${selectedStatus === 'Pending' ? 'text-dark' : ''}`}
+                  onClick={() => setSelectedStatus('Pending')}
+                >
+                  ⏳ Chờ duyệt ({pendingOrders.length})
+                </Button>
+                <Button
+                  variant={selectedStatus === 'Delivered' ? 'success' : 'outline-success'}
+                  size="sm"
+                  className="rounded-pill px-3 fw-semibold"
+                  onClick={() => setSelectedStatus('Delivered')}
+                >
+                  ✅ Đã giao ({deliveredOrders.length})
+                </Button>
+                <Button
+                  variant={selectedStatus === 'Cancelled' ? 'danger' : 'outline-danger'}
+                  size="sm"
+                  className="rounded-pill px-3 fw-semibold"
+                  onClick={() => setSelectedStatus('Cancelled')}
+                >
+                  ❌ Đã hủy ({cancelledOrders.length})
+                </Button>
+              </div>
             </Card.Header>
 
             <div className="table-responsive">
@@ -216,18 +233,24 @@ const AdminDashboardPage = () => {
                     <th>Số Món</th>
                     <th>Tổng Tiền</th>
                     <th>Trạng Thái</th>
-                    <th>Thao Tác Duyệt</th>
+                    <th>Thao Tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.length === 0 ? (
+                  {filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="py-4 text-muted">
-                        Chưa có đơn hàng nào trong hệ thống.
+                      <td colSpan="8" className="py-5 text-muted text-center">
+                        <div className="fs-3 mb-2">📭</div>
+                        <div className="fw-semibold">Không có đơn hàng nào ở trạng thái này.</div>
+                        <small className="text-secondary">
+                          {selectedStatus === 'ALL'
+                            ? 'Hệ thống chưa có đơn hàng nào.'
+                            : 'Thử chuyển sang tab trạng thái khác.'}
+                        </small>
                       </td>
                     </tr>
                   ) : (
-                    orders.map((order) => {
+                    filteredOrders.map((order) => {
                       const isPending = order.status === 'Pending';
                       const isDelivered = order.status === 'Delivered';
                       const isCancelled = order.status === 'Cancelled';
@@ -265,32 +288,14 @@ const AdminDashboardPage = () => {
                             </Badge>
                           </td>
                           <td>
-                            {isPending && (
-                              <div className="d-flex justify-content-center gap-1">
-                                <Button
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleUpdateOrderStatus(order.id, 'Delivered')}
-                                  title="Duyệt hoàn thành giao hàng"
-                                >
-                                  ✓ Giao
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => handleUpdateOrderStatus(order.id, 'Cancelled')}
-                                  title="Hủy đơn hàng"
-                                >
-                                  ✕ Hủy
-                                </Button>
-                              </div>
-                            )}
-                            {isDelivered && (
-                              <span className="text-success small fw-semibold">Đã thanh toán</span>
-                            )}
-                            {isCancelled && (
-                              <span className="text-danger small">Đã hủy</span>
-                            )}
+                            <Link
+                              to={`/admin/orders/${order.id}`}
+                              className="btn btn-outline-primary btn-sm fw-semibold d-inline-flex align-items-center gap-1"
+                              title="Xem chi tiết đơn hàng"
+                            >
+                              <span>👁️</span>
+                              <span>Chi tiết</span>
+                            </Link>
                           </td>
                         </tr>
                       );

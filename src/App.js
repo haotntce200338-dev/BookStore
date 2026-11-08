@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import BookList from './features/books/BookList';
 import AdminBookListPage from './features/books/AdminBookListPage';
 import AdminDashboardPage from './features/admin/AdminDashboardPage';
+import AdminOrderDetailPage from './features/admin/AdminOrderDetailPage';
 import CartPage from './features/cart/CartPage';
 import CheckoutPage from './features/cart/CheckoutPage';
 import CategoryListPage from './features/categories/CategoryListPage';
@@ -85,6 +86,16 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin order details view */}
+            <Route
+              path="/admin/orders/:orderId"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminOrderDetailPage />
                 </ProtectedRoute>
               }
             />
