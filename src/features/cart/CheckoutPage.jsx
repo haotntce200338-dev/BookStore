@@ -22,7 +22,19 @@ const formatPrice = (price) => {
   return Number(price || 0).toLocaleString("vi-VN") + " đ";
 };
 
-const VIETNAMESE_PHONE_REGEX = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+// Chuẩn hoá số điện thoại về dạng 10 số (hỗ trợ nhập +84 hoặc 84)
+const normalizePhoneNumber = (rawPhone) => {
+  let cleaned = String(rawPhone || "").trim().replace(/[\s.-]/g, "");
+  if (cleaned.startsWith("+84")) {
+    cleaned = "0" + cleaned.slice(3);
+  } else if (cleaned.startsWith("84") && cleaned.length === 11) {
+    cleaned = "0" + cleaned.slice(2);
+  }
+  return cleaned;
+};
+
+// Định dạng số điện thoại di động Việt Nam: gồm 10 chữ số, bắt đầu bằng số 0 (các đầu số 03, 05, 07, 08, 09)
+const VIETNAMESE_PHONE_REGEX = /^0[35789][0-9]{8}$/;
 
 const CheckoutPage = () => {
   const dispatch = useDispatch();
@@ -64,7 +76,8 @@ const CheckoutPage = () => {
   const validate = () => {
     const newErrors = {};
     const name = formData.customerName.trim();
-    const phone = formData.phone.trim();
+    const rawPhone = formData.phone.trim();
+    const normalizedPhone = normalizePhoneNumber(rawPhone);
     const address = formData.address.trim();
 
     if (!name) {
@@ -73,11 +86,22 @@ const CheckoutPage = () => {
       newErrors.customerName = "Họ và tên phải có ít nhất 2 ký tự.";
     }
 
-    if (!phone) {
+    if (!rawPhone) {
       newErrors.phone = "Vui lòng nhập số điện thoại giao hàng.";
-    } else if (!VIETNAMESE_PHONE_REGEX.test(phone) || phone.length !== 10) {
+    } else if (!/^\+?\d+$/.test(rawPhone.replace(/[\s.-]/g, ""))) {
+      newErrors.phone = "Số điện thoại chỉ được chứa các chữ số.";
+    } else if (
+      !rawPhone.startsWith("0") &&
+      !rawPhone.startsWith("+84") &&
+      !rawPhone.startsWith("84")
+    ) {
       newErrors.phone =
-        "Số điện thoại không hợp lệ (gồm 10 chữ số, ví dụ: 0912345678).";
+        "Số điện thoại phải bắt đầu bằng số 0 (ví dụ: 0912345678).";
+    } else if (normalizedPhone.length !== 10) {
+      newErrors.phone = `Số điện thoại phải gồm đúng 10 chữ số (hiện có ${normalizedPhone.length} số).`;
+    } else if (!VIETNAMESE_PHONE_REGEX.test(normalizedPhone)) {
+      newErrors.phone =
+        "Số điện thoại không hợp lệ (phải bắt đầu bằng đầu số 03, 05, 07, 08 hoặc 09).";
     }
 
     if (!address) {
@@ -137,7 +161,7 @@ const CheckoutPage = () => {
         id: nextId,
         userId: currentUser?.id || "guest",
         customerName: formData.customerName.trim(),
-        phone: formData.phone.trim(),
+        phone: normalizePhoneNumber(formData.phone),
         address: formData.address.trim(),
         note: formData.note.trim(),
         paymentMethod: formData.paymentMethod,
@@ -293,6 +317,14 @@ const CheckoutPage = () => {
                   <Form.Control.Feedback type="invalid">
                     {errors.phone}
                   </Form.Control.Feedback>
+                  {!errors.phone && (
+                    <Form.Text
+                      className="text-muted"
+                      style={{ fontSize: "0.8rem" }}
+                    >
+                      Gồm 10 chữ số, bắt đầu bằng số 0 (ví dụ: 0912345678).
+                    </Form.Text>
+                  )}
                 </Form.Group>
 
                 <Form.Group className="mb-3" controlId="checkoutAddress">
