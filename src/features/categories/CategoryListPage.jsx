@@ -10,6 +10,7 @@ const CategoryListPage = () => {
   const { categories, loading, error } = useSelector((state) => state.categories);
 
   const [showModal, setShowModal] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -19,9 +20,24 @@ const CategoryListPage = () => {
 
   const activeCategories = (categories || []).filter((cat) => !cat.isDeleted);
 
-  const handleCreateSuccess = (createdCategory) => {
-    setToastMessage(`Đã thêm thể loại "${createdCategory?.name || 'mới'}" thành công!`);
+  const handleOpenCreateModal = () => {
+    setCategoryToEdit(null);
+    setShowModal(true);
+  };
+
+  const handleEditClick = (cat) => {
+    setCategoryToEdit(cat);
+    setShowModal(true);
+  };
+
+  const handleModalSuccess = (savedCategory, mode) => {
+    if (mode === 'update') {
+      setToastMessage(`Đã cập nhật thể loại "${savedCategory?.name || 'mới'}" thành công!`);
+    } else {
+      setToastMessage(`Đã thêm thể loại "${savedCategory?.name || 'mới'}" thành công!`);
+    }
     setShowToast(true);
+    setCategoryToEdit(null);
     dispatch(fetchCategories());
   };
 
@@ -69,7 +85,7 @@ const CategoryListPage = () => {
             size="sm"
             className="fw-semibold"
             style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenCreateModal}
           >
             + Thêm thể loại mới
           </Button>
@@ -104,7 +120,7 @@ const CategoryListPage = () => {
           <p className="text-muted small mb-3">
             Hệ thống hiện tại chưa có dữ liệu thể loại sách để hiển thị. Hãy bắt đầu bằng việc tạo thể loại mới!
           </p>
-          <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
+          <Button variant="primary" size="sm" onClick={handleOpenCreateModal}>
             + Thêm thể loại đầu tiên
           </Button>
         </Alert>
@@ -120,6 +136,7 @@ const CategoryListPage = () => {
               <th style={{ minWidth: '200px' }} className="text-start">Tên thể loại</th>
               <th style={{ minWidth: '320px' }} className="text-start">Mô tả</th>
               <th style={{ width: '140px' }}>Trạng thái</th>
+              <th style={{ width: '110px' }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -142,17 +159,33 @@ const CategoryListPage = () => {
                     Đang hoạt động
                   </Badge>
                 </td>
+                <td>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    className="d-inline-flex align-items-center gap-1 px-2 py-1 fw-semibold"
+                    onClick={() => handleEditClick(cat)}
+                    title="Chỉnh sửa thông tin thể loại"
+                  >
+                    <span>✏️</span>
+                    <span>Sửa</span>
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </Table>
       )}
 
-      {/* Create Category Modal */}
+      {/* Create / Edit Category Modal */}
       <CategoryFormModal
         show={showModal}
-        onHide={() => setShowModal(false)}
-        onSuccess={handleCreateSuccess}
+        onHide={() => {
+          setShowModal(false);
+          setCategoryToEdit(null);
+        }}
+        onSuccess={handleModalSuccess}
+        categoryToEdit={categoryToEdit}
       />
     </Container>
   );
