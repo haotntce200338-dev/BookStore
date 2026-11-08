@@ -93,7 +93,7 @@ const Navbar = () => {
           {/* Action section: Cart (Customer only) and User Authentication */}
           <Nav className="align-items-lg-center d-flex flex-row gap-2 mt-2 mt-lg-0">
             {/* Cart button: visible to guests and customers only */}
-            {!isAdmin ? (
+            {!isAdmin && (
               <Button
                 as={Link}
                 to="/cart"
@@ -116,17 +116,6 @@ const Navbar = () => {
                     {cartTotalQuantity}
                   </Badge>
                 )}
-              </Button>
-            ) : (
-              <Button
-                as={Link}
-                to="/admin/dashboard"
-                variant="outline-danger"
-                size="sm"
-                className="d-inline-flex align-items-center px-3 py-1 me-2 fw-semibold"
-                title="Trang quản trị"
-              >
-                🛡️ Cổng Quản Trị
               </Button>
             )}
 
