@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Row, Col, Card, Table, Badge, Button, Spinner, Alert, Toast, ToastContainer
+  Container, Row, Col, Card, Table, Badge, Button, Spinner, Alert, Toast, ToastContainer, Modal, Form
 } from 'react-bootstrap';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
 /**
  * AdminOrderDetailPage
- * Dedicated page for admin to view full details of a specific customer order and approve pending orders.
+ * Dedicated page for admin to view full details of a specific customer order, approve or reject pending orders.
  */
 const AdminOrderDetailPage = () => {
   const { orderId } = useParams();
@@ -20,6 +20,12 @@ const AdminOrderDetailPage = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastVariant, setToastVariant] = useState('success');
   const [showToast, setShowToast] = useState(false);
+
+  // Reject action state
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectError, setRejectError] = useState('');
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     const fetchOrderDetail = async () => {
@@ -66,6 +72,57 @@ const AdminOrderDetailPage = () => {
       setShowToast(true);
     } finally {
       setApproving(false);
+    }
+  };
+
+  // Handle Reject Order: Pending -> Cancelled with mandatory reason
+  const handleConfirmReject = async (e) => {
+    e.preventDefault();
+    const cleanReason = rejectionReason.trim();
+
+    if (!cleanReason) {
+      setRejectError('Vui lòng nhập lý do từ chối/hủy đơn hàng.');
+      return;
+    }
+
+    if (cleanReason.length < 5) {
+      setRejectError('Lý do hủy đơn cần chi tiết hơn (tối thiểu 5 ký tự).');
+      return;
+    }
+
+    // Anti-XSS validation check
+    if (/[<>{}]/.test(cleanReason)) {
+      setRejectError('Lý do không được chứa ký tự đặc biệt nguy hiểm (<, >, {, }).');
+      return;
+    }
+
+    try {
+      setRejecting(true);
+      setRejectError('');
+      const cancelledAt = new Date().toISOString();
+      await axios.patch(`http://localhost:3001/orders/${order.id}`, {
+        status: 'Cancelled',
+        cancellationReason: cleanReason,
+        cancelledAt: cancelledAt,
+      });
+
+      // Update order state locally
+      setOrder((prev) => ({
+        ...prev,
+        status: 'Cancelled',
+        cancellationReason: cleanReason,
+        cancelledAt: cancelledAt,
+      }));
+
+      setShowRejectModal(false);
+      setRejectionReason('');
+      setToastVariant('danger');
+      setToastMessage(`❌ Đã từ chối đơn hàng #${order.id}!`);
+      setShowToast(true);
+    } catch (err) {
+      setRejectError('Có lỗi xảy ra khi cập nhật từ chối đơn. Vui lòng thử lại!');
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -146,14 +203,28 @@ const AdminOrderDetailPage = () => {
           </p>
         </div>
 
-        {/* Approve Action Button (Only shown when order is Pending) */}
+        {/* Actions: Từ chối & Duyệt giao hàng (Only shown when order is Pending) */}
         {isPending && (
-          <div>
+          <div className="d-flex align-items-center gap-2">
+            <Button
+              variant="outline-danger"
+              className="fw-semibold px-3 py-2 shadow-sm d-flex align-items-center gap-2"
+              onClick={() => {
+                setRejectError('');
+                setRejectionReason('');
+                setShowRejectModal(true);
+              }}
+              disabled={approving || rejecting}
+              title="Từ chối đơn hàng kèm lý do"
+            >
+              <span>✕</span>
+              <span>Từ chối đơn</span>
+            </Button>
             <Button
               variant="success"
               className="fw-semibold px-3 py-2 shadow-sm d-flex align-items-center gap-2"
               onClick={handleApproveOrder}
-              disabled={approving}
+              disabled={approving || rejecting}
               title="Duyệt đơn hàng và chuyển sang trạng thái Đã giao (Delivered)"
             >
               {approving ? (
@@ -304,35 +375,96 @@ const AdminOrderDetailPage = () => {
             </tfoot>
           </Table>
         </div>
+      </Card>
 
-        {/* Action footer when Pending */}
-        {isPending && (
-          <Card.Footer className="bg-light py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <span className="small text-muted">
-              Đơn hàng này đang ở trạng thái <strong>Chờ duyệt (Pending)</strong>.
-            </span>
+      {/* Reject Order Confirmation Modal */}
+      <Modal
+        show={showRejectModal}
+        onHide={() => {
+          if (!rejecting) {
+            setShowRejectModal(false);
+            setRejectError('');
+            setRejectionReason('');
+          }
+        }}
+        centered
+        backdrop="static"
+      >
+        <Modal.Header closeButton={!rejecting} className="bg-light">
+          <Modal.Title className="fs-5 text-danger fw-bold d-flex align-items-center gap-2">
+            <span>❌</span>
+            <span>Từ Chối Đơn Hàng #{order.id}</span>
+          </Modal.Title>
+        </Modal.Header>
+
+        <Form onSubmit={handleConfirmReject}>
+          <Modal.Body>
+            <div className="mb-3 small text-muted">
+              Khách hàng: <strong>{order.customerName || 'Khách vãng lai'}</strong>
+              <br />
+              Lý do này sẽ được lưu trữ và hiển thị cho khách hàng xem trong lịch sử đơn hàng.
+            </div>
+
+            {rejectError && (
+              <Alert variant="danger" className="py-2 small">
+                {rejectError}
+              </Alert>
+            )}
+
+            <Form.Group className="mb-2">
+              <Form.Label className="fw-semibold small">
+                Lý do từ chối đơn hàng <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Ví dụ: Tạm thời hết sách trong kho; Không liên hệ được số điện thoại nhận hàng..."
+                value={rejectionReason}
+                onChange={(e) => {
+                  setRejectionReason(e.target.value);
+                  if (rejectError) setRejectError('');
+                }}
+                disabled={rejecting}
+                autoFocus
+              />
+              <Form.Text className="text-muted small">
+                Tối thiểu 5 ký tự. Vui lòng nêu rõ lý do để thông báo cho khách.
+              </Form.Text>
+            </Form.Group>
+          </Modal.Body>
+
+          <Modal.Footer className="bg-light">
             <Button
-              variant="success"
+              variant="secondary"
               size="sm"
-              className="fw-semibold px-3 py-1 shadow-sm d-flex align-items-center gap-1"
-              onClick={handleApproveOrder}
-              disabled={approving}
+              onClick={() => {
+                setShowRejectModal(false);
+                setRejectError('');
+                setRejectionReason('');
+              }}
+              disabled={rejecting}
             >
-              {approving ? (
+              Hủy bỏ
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              type="submit"
+              disabled={rejecting}
+              className="fw-semibold"
+            >
+              {rejecting ? (
                 <>
-                  <Spinner as="span" animation="border" size="sm" role="status" />
-                  <span>Đang duyệt...</span>
+                  <Spinner as="span" animation="border" size="sm" role="status" className="me-1" />
+                  Đang xử lý...
                 </>
               ) : (
-                <>
-                  <span>✓</span>
-                  <span>Duyệt giao hàng</span>
-                </>
+                'Xác nhận từ chối'
               )}
             </Button>
-          </Card.Footer>
-        )}
-      </Card>
+          </Modal.Footer>
+        </Form>
+      </Modal>
 
       {/* Toast Feedback Notification */}
       <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1080 }}>
