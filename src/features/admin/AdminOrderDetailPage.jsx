@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Row, Col, Card, Table, Badge, Button, Spinner, Alert
+  Container, Row, Col, Card, Table, Badge, Button, Spinner, Alert, Toast, ToastContainer
 } from 'react-bootstrap';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
 /**
  * AdminOrderDetailPage
- * Dedicated page for admin to view full details of a specific customer order.
+ * Dedicated page for admin to view full details of a specific customer order and approve pending orders.
  */
 const AdminOrderDetailPage = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Approve action state
+  const [approving, setApproving] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVariant, setToastVariant] = useState('success');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchOrderDetail = async () => {
@@ -33,6 +39,35 @@ const AdminOrderDetailPage = () => {
       fetchOrderDetail();
     }
   }, [orderId]);
+
+  // Handle Approve Order: Pending -> Delivered
+  const handleApproveOrder = async () => {
+    try {
+      setApproving(true);
+      const approvedAt = new Date().toISOString();
+      await axios.patch(`http://localhost:3001/orders/${order.id}`, {
+        status: 'Delivered',
+        approvedAt: approvedAt,
+      });
+
+      // Update order state locally
+      setOrder((prev) => ({
+        ...prev,
+        status: 'Delivered',
+        approvedAt: approvedAt,
+      }));
+
+      setToastVariant('success');
+      setToastMessage(`✓ Đã duyệt giao đơn hàng #${order.id} thành công!`);
+      setShowToast(true);
+    } catch (err) {
+      setToastVariant('danger');
+      setToastMessage('Không thể duyệt đơn hàng. Vui lòng thử lại!');
+      setShowToast(true);
+    } finally {
+      setApproving(false);
+    }
+  };
 
   const formatPrice = (price) => {
     return Number(price || 0).toLocaleString('vi-VN') + ' đ';
@@ -110,6 +145,31 @@ const AdminOrderDetailPage = () => {
             Xem toàn bộ thông tin người nhận, địa chỉ giao hàng và danh sách sách đã mua.
           </p>
         </div>
+
+        {/* Approve Action Button (Only shown when order is Pending) */}
+        {isPending && (
+          <div>
+            <Button
+              variant="success"
+              className="fw-semibold px-3 py-2 shadow-sm d-flex align-items-center gap-2"
+              onClick={handleApproveOrder}
+              disabled={approving}
+              title="Duyệt đơn hàng và chuyển sang trạng thái Đã giao (Delivered)"
+            >
+              {approving ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" role="status" />
+                  <span>Đang xử lý duyệt...</span>
+                </>
+              ) : (
+                <>
+                  <span>✓</span>
+                  <span>Duyệt giao hàng</span>
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 2 Information Cards: Customer & Payment */}
@@ -244,7 +304,54 @@ const AdminOrderDetailPage = () => {
             </tfoot>
           </Table>
         </div>
+
+        {/* Action footer when Pending */}
+        {isPending && (
+          <Card.Footer className="bg-light py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span className="small text-muted">
+              Đơn hàng này đang ở trạng thái <strong>Chờ duyệt (Pending)</strong>.
+            </span>
+            <Button
+              variant="success"
+              size="sm"
+              className="fw-semibold px-3 py-1 shadow-sm d-flex align-items-center gap-1"
+              onClick={handleApproveOrder}
+              disabled={approving}
+            >
+              {approving ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" role="status" />
+                  <span>Đang duyệt...</span>
+                </>
+              ) : (
+                <>
+                  <span>✓</span>
+                  <span>Duyệt giao hàng</span>
+                </>
+              )}
+            </Button>
+          </Card.Footer>
+        )}
       </Card>
+
+      {/* Toast Feedback Notification */}
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1080 }}>
+        <Toast
+          onClose={() => setShowToast(false)}
+          show={showToast}
+          delay={3500}
+          autohide
+          bg={toastVariant === 'danger' ? 'danger' : 'success'}
+        >
+          <Toast.Header>
+            <strong className="me-auto text-dark">📦 Quản Trị Đơn Hàng</strong>
+            <small className="text-muted">Vừa xong</small>
+          </Toast.Header>
+          <Toast.Body className="text-white small fw-semibold">
+            {toastMessage}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
     </Container>
   );
 };
