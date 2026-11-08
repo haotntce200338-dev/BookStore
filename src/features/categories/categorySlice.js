@@ -106,6 +106,25 @@ export const updateCategory = createAsyncThunk(
   }
 );
 
+/**
+ * Soft delete a category in JSON Server by setting isDeleted: true.
+ */
+export const deleteCategory = createAsyncThunk(
+  'categories/deleteCategory',
+  async (categoryId, { rejectWithValue }) => {
+    try {
+      const response = await axios.patch(`${API_URL}/${categoryId}`, {
+        isDeleted: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Có lỗi xảy ra khi xóa thể loại. Vui lòng thử lại!'
+      );
+    }
+  }
+);
+
 const initialState = {
   categories: [],
   loading: false,
@@ -114,6 +133,8 @@ const initialState = {
   createError: null,
   updateLoading: false,
   updateError: null,
+  deleteLoading: false,
+  deleteError: null,
 };
 
 const categorySlice = createSlice({
@@ -124,6 +145,7 @@ const categorySlice = createSlice({
       state.error = null;
       state.createError = null;
       state.updateError = null;
+      state.deleteError = null;
     },
   },
   extraReducers: (builder) => {
@@ -177,6 +199,22 @@ const categorySlice = createSlice({
       .addCase(updateCategory.rejected, (state, action) => {
         state.updateLoading = false;
         state.updateError = action.payload;
+      })
+      // deleteCategory lifecycle (Soft Delete)
+      .addCase(deleteCategory.pending, (state) => {
+        state.deleteLoading = true;
+        state.deleteError = null;
+      })
+      .addCase(deleteCategory.fulfilled, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = null;
+        state.categories = state.categories.filter(
+          (cat) => String(cat.id) !== String(action.payload.id)
+        );
+      })
+      .addCase(deleteCategory.rejected, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = action.payload;
       });
   },
 });
