@@ -27,7 +27,7 @@
       "categoryId": "cat-1",
       "price": 150000,
       "originalPrice": 180000,
-      "stock": 34,
+      "stock": 33,
       "image": "https://picsum.photos/300/400?random=1",
       "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap.",
       "isDeleted": false
@@ -39,7 +39,7 @@
       "categoryId": "cat-3",
       "price": 79000,
       "originalPrice": 95000,
-      "stock": 48,
+      "stock": 47,
       "image": "https://picsum.photos/300/400?random=2",
       "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
       "isDeleted": false
@@ -125,6 +125,32 @@
       "totalAmount": 79000,
       "status": "Cancelled",
       "orderDate": "2026-11-06T13:36:18.081Z"
+    },
+    {
+      "id": "qp07ETSOzKk",
+      "userId": "u-2",
+      "customerName": "Khách hàng",
+      "phone": "0946994463",
+      "address": "abc xyz",
+      "note": "",
+      "paymentMethod": "banking",
+      "items": [
+        {
+          "bookId": "b-101",
+          "title": "Học ReactJS Toàn Tập",
+          "price": 150000,
+          "quantity": 1
+        },
+        {
+          "bookId": "b-102",
+          "title": "Nhà Giả Kim",
+          "price": 79000,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 229000,
+      "status": "Pending",
+      "orderDate": "2026-11-08T07:34:00.436Z"
     }
   ],
   "users": [
@@ -144,5 +170,6 @@
       "role": "customer",
       "isDeleted": false
     }
-  ]
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }
