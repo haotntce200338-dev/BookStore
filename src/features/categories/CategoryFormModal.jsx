@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { createCategory, clearCategoryError } from './categorySlice';
+import { createCategory, updateCategory, clearCategoryError } from './categorySlice';
 
 // Regex to block XSS and malicious injection patterns (tags, protocols, events, js functions)
 const MALICIOUS_REGEX = /<[^>]*>|javascript:|data:\s*text\/html|vbscript:|on\w+\s*=|alert\(|eval\(|document\./i;
@@ -38,11 +38,15 @@ export const generateNextCategoryCode = (categoryList = [], defaultStart = 1) =>
   return `cat-${maxNumber + 1}`;
 };
 
-const CategoryFormModal = ({ show, onHide, onSuccess }) => {
+const CategoryFormModal = ({ show, onHide, onSuccess, categoryToEdit = null }) => {
   const dispatch = useDispatch();
-  const { categories, createLoading, createError } = useSelector(
+  const { categories, createLoading, createError, updateLoading, updateError } = useSelector(
     (state) => state.categories
   );
+
+  const isEditMode = Boolean(categoryToEdit);
+  const isSubmitting = isEditMode ? updateLoading : createLoading;
+  const submitError = isEditMode ? updateError : createError;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -51,20 +55,30 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
 
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Compute next category code automatically
+  // Compute next category code automatically for create mode
   const nextCategoryCode = generateNextCategoryCode(categories, 1);
+  const currentCategoryCode = isEditMode
+    ? (categoryToEdit?.id || '')
+    : nextCategoryCode;
 
-  // Reset form when modal opens or closes
+  // Reset or prefill form when modal opens or closes
   useEffect(() => {
     if (show) {
-      setFormData({
-        name: '',
-        description: '',
-      });
+      if (categoryToEdit) {
+        setFormData({
+          name: categoryToEdit.name || '',
+          description: categoryToEdit.description || '',
+        });
+      } else {
+        setFormData({
+          name: '',
+          description: '',
+        });
+      }
       setValidationErrors({});
       dispatch(clearCategoryError());
     }
-  }, [show, dispatch]);
+  }, [show, categoryToEdit, dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -94,10 +108,11 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
     } else if (trimmedName.length < 2 || trimmedName.length > 50) {
       errors.name = 'Tên thể loại phải có độ dài từ 2 đến 50 ký tự.';
     } else {
-      // Check for duplicated category name (case-insensitive)
+      // Check for duplicated category name (case-insensitive) excluding the category currently being edited
       const isDuplicate = (categories || []).some(
         (cat) =>
           !cat.isDeleted &&
+          (!isEditMode || String(cat.id) !== String(categoryToEdit.id)) &&
           cat.name?.trim().toLowerCase() === trimmedName.toLowerCase()
       );
       if (isDuplicate) {
@@ -128,22 +143,41 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
 
     setValidationErrors({});
 
-    const newCategory = {
-      id: nextCategoryCode,
-      name: formData.name.trim(),
-      description: formData.description.trim() || 'Chưa có mô tả',
-      isDeleted: false,
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditMode) {
+      const updatedCategory = {
+        id: categoryToEdit.id,
+        name: formData.name.trim(),
+        description: formData.description.trim() || 'Chưa có mô tả',
+      };
 
-    const resultAction = await dispatch(createCategory(newCategory));
+      const resultAction = await dispatch(updateCategory(updatedCategory));
 
-    if (createCategory.fulfilled.match(resultAction)) {
-      if (onSuccess) {
-        onSuccess(resultAction.payload);
+      if (updateCategory.fulfilled.match(resultAction)) {
+        if (onSuccess) {
+          onSuccess(resultAction.payload, 'update');
+        }
+        if (onHide) {
+          onHide();
+        }
       }
-      if (onHide) {
-        onHide();
+    } else {
+      const newCategory = {
+        id: nextCategoryCode,
+        name: formData.name.trim(),
+        description: formData.description.trim() || 'Chưa có mô tả',
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      const resultAction = await dispatch(createCategory(newCategory));
+
+      if (createCategory.fulfilled.match(resultAction)) {
+        if (onSuccess) {
+          onSuccess(resultAction.payload, 'create');
+        }
+        if (onHide) {
+          onHide();
+        }
       }
     }
   };
@@ -152,32 +186,38 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
     <Modal show={show} onHide={onHide} centered backdrop="static" keyboard={true}>
       <Modal.Header closeButton>
         <Modal.Title className="fw-bold fs-5 text-dark">
-          🏷️ Thêm Thể Loại Sách Mới
+          {isEditMode ? '✏️ Cập Nhật Thông Tin Thể Loại' : '🏷️ Thêm Thể Loại Sách Mới'}
         </Modal.Title>
       </Modal.Header>
 
       <Form noValidate onSubmit={handleSubmit}>
         <Modal.Body className="p-4">
-          {createError && (
+          {submitError && (
             <Alert variant="danger" dismissible onClose={() => dispatch(clearCategoryError())} className="small">
-              {createError}
+              {submitError}
             </Alert>
           )}
 
-          {/* Auto-generated Category Code */}
+          {/* Category Code Field */}
           <Form.Group className="mb-3" controlId="categoryCode">
             <Form.Label className="fw-semibold small">
-              Mã thể loại (Tự động tạo):
+              {isEditMode ? 'Mã thể loại (Cố định):' : 'Mã thể loại (Tự động tạo):'}
             </Form.Label>
             <Form.Control
               type="text"
-              value={`${nextCategoryCode} (Hệ thống tự cấp)`}
+              value={
+                isEditMode
+                  ? `${currentCategoryCode} (Mã định danh)`
+                  : `${nextCategoryCode} (Hệ thống tự cấp)`
+              }
               disabled
               readOnly
               className="bg-light fw-bold text-primary font-monospace"
             />
             <Form.Text className="text-muted small">
-              Quy tắc mã thể loại: cat-1, cat-2, cat-3...
+              {isEditMode
+                ? 'Mã thể loại không thể thay đổi sau khi tạo.'
+                : 'Quy tắc mã thể loại: cat-1, cat-2, cat-3...'}
             </Form.Text>
           </Form.Group>
 
@@ -193,7 +233,7 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
               value={formData.name}
               onChange={handleChange}
               isInvalid={!!validationErrors.name}
-              disabled={createLoading}
+              disabled={isSubmitting}
               autoFocus
             />
             <Form.Control.Feedback type="invalid">
@@ -214,7 +254,7 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
               value={formData.description}
               onChange={handleChange}
               isInvalid={!!validationErrors.description}
-              disabled={createLoading}
+              disabled={isSubmitting}
             />
             <Form.Control.Feedback type="invalid">
               {validationErrors.description}
@@ -226,16 +266,16 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
         </Modal.Body>
 
         <Modal.Footer className="bg-light">
-          <Button variant="secondary" onClick={onHide} disabled={createLoading}>
+          <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>
             Hủy
           </Button>
           <Button
             variant="primary"
             type="submit"
-            disabled={createLoading}
+            disabled={isSubmitting}
             style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
           >
-            {createLoading ? (
+            {isSubmitting ? (
               <>
                 <Spinner
                   as="span"
@@ -245,10 +285,10 @@ const CategoryFormModal = ({ show, onHide, onSuccess }) => {
                   aria-hidden="true"
                   className="me-2"
                 />
-                Đang tạo...
+                {isEditMode ? 'Đang cập nhật...' : 'Đang tạo...'}
               </>
             ) : (
-              'Thêm thể loại'
+              isEditMode ? 'Lưu thay đổi' : 'Thêm thể loại'
             )}
           </Button>
         </Modal.Footer>

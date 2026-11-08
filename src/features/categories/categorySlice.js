@@ -68,12 +68,52 @@ export const createCategory = createAsyncThunk(
   }
 );
 
+/**
+ * Update an existing category in JSON Server with anti-XSS validation.
+ */
+export const updateCategory = createAsyncThunk(
+  'categories/updateCategory',
+  async ({ id, name, description }, { rejectWithValue }) => {
+    try {
+      const cleanName = name?.trim() || '';
+      const cleanDesc = description?.trim() || '';
+
+      // Strict validation guard at Thunk level to block devtools / inspect manipulation
+      if (
+        !cleanName ||
+        cleanName.length < 2 ||
+        cleanName.length > 50 ||
+        MALICIOUS_REGEX.test(cleanName) ||
+        !CATEGORY_NAME_SAFE_REGEX.test(cleanName) ||
+        MALICIOUS_REGEX.test(cleanDesc) ||
+        cleanDesc.length > 250
+      ) {
+        return rejectWithValue(
+          'Dữ liệu gửi lên không hợp lệ hoặc chứa ký tự không an toàn (XSS).'
+        );
+      }
+
+      const response = await axios.patch(`${API_URL}/${id}`, {
+        name: cleanName,
+        description: cleanDesc || 'Chưa có mô tả',
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật thể loại. Vui lòng thử lại!'
+      );
+    }
+  }
+);
+
 const initialState = {
   categories: [],
   loading: false,
   error: null,
   createLoading: false,
   createError: null,
+  updateLoading: false,
+  updateError: null,
 };
 
 const categorySlice = createSlice({
@@ -83,6 +123,7 @@ const categorySlice = createSlice({
     clearCategoryError: (state) => {
       state.error = null;
       state.createError = null;
+      state.updateError = null;
     },
   },
   extraReducers: (builder) => {
@@ -114,6 +155,28 @@ const categorySlice = createSlice({
       .addCase(createCategory.rejected, (state, action) => {
         state.createLoading = false;
         state.createError = action.payload;
+      })
+      // updateCategory lifecycle
+      .addCase(updateCategory.pending, (state) => {
+        state.updateLoading = true;
+        state.updateError = null;
+      })
+      .addCase(updateCategory.fulfilled, (state, action) => {
+        state.updateLoading = false;
+        state.updateError = null;
+        const index = state.categories.findIndex(
+          (cat) => String(cat.id) === String(action.payload.id)
+        );
+        if (index !== -1) {
+          state.categories[index] = {
+            ...state.categories[index],
+            ...action.payload,
+          };
+        }
+      })
+      .addCase(updateCategory.rejected, (state, action) => {
+        state.updateLoading = false;
+        state.updateError = action.payload;
       });
   },
 });
