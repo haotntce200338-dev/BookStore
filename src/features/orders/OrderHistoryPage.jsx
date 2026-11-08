@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Alert,
@@ -6,6 +6,8 @@ import {
   Button,
   Card,
   Container,
+  Form,
+  Modal,
   Spinner,
 } from 'react-bootstrap';
 
@@ -58,38 +60,76 @@ function OrderHistoryPage() {
     orders,
     loading,
     error,
-    cancellingOrderId,
-    cancelError,
+    cancelLoading,
   } = useSelector((state) => state.orders);
 
-  // Fetch orders when the page opens.
+  // Modal states.
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelFormError, setCancelFormError] = useState('');
+
+  // Fetch customer orders when the page opens.
   useEffect(() => {
     if (currentUser?.id) {
       dispatch(fetchCustomerOrders(currentUser.id));
     }
   }, [dispatch, currentUser?.id]);
 
-  // Retry loading customer orders.
+  // Open cancellation modal.
+  const handleOpenCancelModal = (order) => {
+    setSelectedOrder(order);
+    setCancelReason('');
+    setCancelFormError('');
+    setShowCancelModal(true);
+  };
+
+  // Close cancellation modal.
+  const handleCloseCancelModal = () => {
+    if (cancelLoading) return;
+
+    setShowCancelModal(false);
+    setSelectedOrder(null);
+    setCancelReason('');
+    setCancelFormError('');
+  };
+
+  // Confirm order cancellation.
+  const handleConfirmCancel = async (e) => {
+    e.preventDefault();
+
+    const reason = cancelReason.trim();
+
+    if (!reason) {
+      setCancelFormError('Vui lòng nhập lý do hủy đơn hàng.');
+      return;
+    }
+
+    if (!selectedOrder) return;
+
+    try {
+      await dispatch(
+        cancelCustomerOrder({
+          orderId: selectedOrder.id,
+          reason: reason,
+        })
+      ).unwrap();
+
+      handleCloseCancelModal();
+    } catch (err) {
+      setCancelFormError(
+        typeof err === 'string'
+          ? err
+          : 'Không thể hủy đơn hàng. Vui lòng thử lại.'
+      );
+    }
+  };
+
+  // Retry fetching customer orders.
   const handleRetry = () => {
     if (currentUser?.id) {
       dispatch(fetchCustomerOrders(currentUser.id));
     }
-  };
-
-  // Cancel a pending order after customer confirmation.
-  const handleCancel = (order) => {
-    const confirmed = window.confirm(
-      `Bạn có chắc chắn muốn hủy đơn hàng ${order.id}?`
-    );
-
-    if (!confirmed) return;
-
-    dispatch(
-      cancelCustomerOrder({
-        orderId: order.id,
-        userId: currentUser.id,
-      })
-    );
   };
 
   return (
@@ -122,13 +162,6 @@ function OrderHistoryPage() {
         </Alert>
       )}
 
-      {/* Cancel error state */}
-      {!loading && cancelError && (
-        <Alert variant="danger" className="text-center">
-          {cancelError}
-        </Alert>
-      )}
-
       {/* Empty state */}
       {!loading && !error && orders.length === 0 && (
         <Alert variant="info" className="text-center py-4">
@@ -156,21 +189,19 @@ function OrderHistoryPage() {
                   </div>
                 </div>
 
-                <div className="d-flex align-items-center gap-2 flex-wrap">
+                <div className="d-flex align-items-center gap-2">
                   <Badge bg={getStatusVariant(order.status)}>
                     {order.status || 'Không xác định'}
                   </Badge>
 
+                  {/* Only pending orders can be cancelled */}
                   {order.status === 'Pending' && (
                     <Button
                       variant="outline-danger"
                       size="sm"
-                      disabled={Boolean(cancellingOrderId)}
-                      onClick={() => handleCancel(order)}
+                      onClick={() => handleOpenCancelModal(order)}
                     >
-                      {cancellingOrderId === order.id
-                        ? 'Đang hủy...'
-                        : 'Hủy đơn hàng'}
+                      Hủy đơn hàng
                     </Button>
                   )}
                 </div>
@@ -215,11 +246,120 @@ function OrderHistoryPage() {
                     {formatPrice(order.totalAmount)}
                   </strong>
                 </div>
+
+                {/* Display cancellation reason */}
+                {order.status === 'Cancelled' && order.cancelReason && (
+                  <Alert variant="light" className="mt-3 mb-0 border">
+                    <strong className="text-danger">
+                      Lý do hủy đơn:
+                    </strong>
+                    <p className="mb-0 mt-1">
+                      {order.cancelReason}
+                    </p>
+                  </Alert>
+                )}
               </Card.Body>
             </Card>
           ))}
         </>
       )}
+
+      {/* Cancel Order Confirmation Modal */}
+      <Modal
+        show={showCancelModal}
+        onHide={handleCloseCancelModal}
+        centered
+        backdrop={cancelLoading ? 'static' : true}
+        keyboard={!cancelLoading}
+      >
+        <Form id="cancel-order-form" onSubmit={handleConfirmCancel}>
+          <Modal.Header
+            closeButton={!cancelLoading}
+            closeVariant="white"
+            className="bg-danger text-white"
+          >
+            <Modal.Title className="fw-bold">
+              Xác nhận hủy đơn hàng
+            </Modal.Title>
+          </Modal.Header>
+
+          <Modal.Body className="p-4">
+            <p>Bạn có chắc chắn muốn hủy đơn hàng này không?</p>
+
+            {selectedOrder && (
+              <div className="mb-3">
+                <strong>Mã đơn hàng:</strong>
+                <span className="ms-2 text-danger fw-bold">
+                  {selectedOrder.id}
+                </span>
+              </div>
+            )}
+
+            <Form.Group controlId="cancelReason">
+              <Form.Label className="fw-semibold">
+                Lý do hủy đơn hàng <span className="text-danger">*</span>
+              </Form.Label>
+
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Nhập lý do bạn muốn hủy đơn hàng..."
+                value={cancelReason}
+                onChange={(e) => {
+                  setCancelReason(e.target.value);
+                  setCancelFormError('');
+                }}
+                maxLength={500}
+                disabled={cancelLoading}
+              />
+
+              <Form.Text className="text-muted">
+                Tối đa 500 ký tự.
+              </Form.Text>
+            </Form.Group>
+
+            {cancelFormError && (
+              <Alert variant="danger" className="mt-3 mb-0 py-2">
+                {cancelFormError}
+              </Alert>
+            )}
+
+            <p className="text-muted small mt-3 mb-0">
+              Sau khi xác nhận, đơn hàng sẽ được chuyển sang trạng thái
+              đã hủy.
+            </p>
+          </Modal.Body>
+
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={handleCloseCancelModal}
+              disabled={cancelLoading}
+            >
+              Hủy
+            </Button>
+
+            <Button
+              type="submit"
+              variant="danger"
+              disabled={cancelLoading || !cancelReason.trim()}
+            >
+              {cancelLoading ? (
+                <>
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    className="me-2"
+                  />
+                  Đang xử lý...
+                </>
+              ) : (
+                'Xác nhận hủy'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
     </Container>
   );
 }

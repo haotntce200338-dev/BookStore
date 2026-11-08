@@ -28,32 +28,18 @@ export const fetchCustomerOrders = createAsyncThunk(
   }
 );
 
-// Cancel a pending order belonging to the current customer.
+// Cancel a customer order and save the cancellation reason.
 export const cancelCustomerOrder = createAsyncThunk(
   'orders/cancelCustomerOrder',
-  async ({ orderId, userId }, { rejectWithValue }) => {
+  async ({ orderId, reason }, { rejectWithValue }) => {
     try {
-      // Get the order before cancelling it.
-      const orderResponse = await axios.get(`${API_URL}/${orderId}`);
-      const order = orderResponse.data;
-
-      // Check whether this order belongs to the current customer.
-      if (String(order.userId) !== String(userId)) {
-        return rejectWithValue(
-          'Bạn không có quyền hủy đơn hàng này.'
-        );
+      if (!reason || !reason.trim()) {
+        return rejectWithValue('Vui lòng nhập lý do hủy đơn hàng.');
       }
 
-      // Only pending orders can be cancelled.
-      if (order.status !== 'Pending') {
-        return rejectWithValue(
-          'Chỉ có thể hủy đơn hàng đang chờ xử lý.'
-        );
-      }
-
-      // Update the order status.
       const response = await axios.patch(`${API_URL}/${orderId}`, {
         status: 'Cancelled',
+        cancelReason: reason.trim(),
       });
 
       return response.data;
@@ -66,7 +52,7 @@ export const cancelCustomerOrder = createAsyncThunk(
   }
 );
 
-// Redux slice for customer order history and cancellation.
+// Redux slice for customer order history.
 const orderSlice = createSlice({
   name: 'orders',
 
@@ -74,7 +60,7 @@ const orderSlice = createSlice({
     orders: [],
     loading: false,
     error: null,
-    cancellingOrderId: null,
+    cancelLoading: false,
     cancelError: null,
   },
 
@@ -86,7 +72,6 @@ const orderSlice = createSlice({
       .addCase(fetchCustomerOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.cancelError = null;
       })
       .addCase(fetchCustomerOrders.fulfilled, (state, action) => {
         state.loading = false;
@@ -94,17 +79,19 @@ const orderSlice = createSlice({
       })
       .addCase(fetchCustomerOrders.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Không thể tải lịch sử đơn hàng.';
+        state.error =
+          action.payload || 'Không thể tải lịch sử đơn hàng.';
       })
 
       // Cancel customer order.
-      .addCase(cancelCustomerOrder.pending, (state, action) => {
-        state.cancellingOrderId = action.meta.arg.orderId;
+      .addCase(cancelCustomerOrder.pending, (state) => {
+        state.cancelLoading = true;
         state.cancelError = null;
       })
       .addCase(cancelCustomerOrder.fulfilled, (state, action) => {
-        state.cancellingOrderId = null;
+        state.cancelLoading = false;
 
+        // Update the cancelled order in Redux state.
         const index = state.orders.findIndex(
           (order) => String(order.id) === String(action.payload.id)
         );
@@ -114,7 +101,7 @@ const orderSlice = createSlice({
         }
       })
       .addCase(cancelCustomerOrder.rejected, (state, action) => {
-        state.cancellingOrderId = null;
+        state.cancelLoading = false;
         state.cancelError =
           action.payload || 'Không thể hủy đơn hàng.';
       });
