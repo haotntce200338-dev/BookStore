@@ -76,45 +76,68 @@ const BookList = () => {
       </div>
 
       {/* Search and Category Filter Toolbar */}
-      <div className="bg-white p-3 rounded mb-4 shadow-sm border">
+      <div className="bg-white p-3 p-md-4 rounded-3 mb-4 shadow-sm border">
         <Row className="g-3 align-items-center">
-          <Col xs={12} md={6}>
-            <InputGroup>
-              <InputGroup.Text className="bg-light">🔍</InputGroup.Text>
+          {/* Search Box */}
+          <Col xs={12} md={7} lg={8}>
+            <InputGroup className="search-input-group">
+              <InputGroup.Text className="bg-white border-end-0 text-muted ps-3">
+                🔍
+              </InputGroup.Text>
               <Form.Control
                 type="text"
+                className="border-start-0 border-end-0 ps-1 py-2 shadow-none"
                 placeholder="Tìm kiếm theo tên sách hoặc tác giả..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              {searchTerm ? (
+                <Button
+                  variant="outline-secondary"
+                  className="bg-white border-start-0 text-muted px-3"
+                  onClick={() => setSearchTerm('')}
+                  title="Xóa từ khóa tìm kiếm"
+                  style={{ borderColor: '#dee2e6' }}
+                >
+                  ✕
+                </Button>
+              ) : (
+                <InputGroup.Text className="bg-white border-start-0 pe-3"></InputGroup.Text>
+              )}
             </InputGroup>
           </Col>
-          <Col xs={12} sm={8} md={4}>
-            <Form.Select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">-- Tất cả thể loại --</option>
-              {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col xs={12} sm={4} md={2} className="text-end">
-            {(searchTerm || selectedCategory) && (
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('');
-                }}
+
+          {/* Category Filter & Reset */}
+          <Col xs={12} md={5} lg={4}>
+            <div className="d-flex gap-2">
+              <Form.Select
+                className="py-2 shadow-none border flex-grow-1"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                Xóa lọc
-              </Button>
-            )}
+                <option value="">📚 Tất cả thể loại</option>
+                {categories?.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </Form.Select>
+
+              {(searchTerm || selectedCategory) && (
+                <Button
+                  variant="outline-danger"
+                  className="text-nowrap px-3 d-flex align-items-center gap-1 shadow-sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('');
+                  }}
+                  title="Xóa tất cả bộ lọc"
+                >
+                  <span>✕</span>
+                  <span className="d-none d-sm-inline">Xóa lọc</span>
+                </Button>
+              )}
+            </div>
           </Col>
         </Row>
       </div>

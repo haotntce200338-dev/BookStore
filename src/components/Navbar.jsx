@@ -81,6 +81,11 @@ const Navbar = () => {
                 <Nav.Link as={Link} to="/" className="fw-semibold px-2 text-dark">
                   Trang chủ
                 </Nav.Link>
+                {isAuthenticated && !isAdmin && (
+                  <Nav.Link as={Link} to="/orders" className="fw-semibold px-2 text-dark">
+                    Đơn hàng của tôi
+                  </Nav.Link>
+                )}
               </>
             )}
           </Nav>
@@ -167,6 +172,9 @@ const Navbar = () => {
                   <>
                     <NavDropdown.Item as={Link} to="/cart">
                       🛒 Giỏ hàng của tôi
+                    </NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/orders">
+                      📦 Đơn hàng của tôi
                     </NavDropdown.Item>
                     <NavDropdown.Divider />
                   </>
