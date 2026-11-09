@@ -183,7 +183,7 @@
     {
       "id": "u-1",
       "username": "admin",
-      "password": "123",
+      "password": "Admin123",
       "fullName": "Quản trị viên",
       "role": "admin",
       "isDeleted": false
@@ -191,10 +191,19 @@
     {
       "id": "u-2",
       "username": "customer",
-      "password": "123",
+      "password": "Customer123",
       "fullName": "Khách hàng",
       "role": "customer",
       "isDeleted": false
+    },
+    {
+      "id": "1Sfggm_p5dw",
+      "username": "kypt",
+      "password": "Tipi3010",
+      "fullName": "Đỗ Trần Thiên Phúc",
+      "role": "customer",
+      "isDeleted": false
     }
-  ]
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }

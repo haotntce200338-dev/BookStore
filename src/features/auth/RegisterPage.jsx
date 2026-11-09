@@ -10,6 +10,8 @@ const MALICIOUS_REGEX = /<[^>]*>|javascript:|data:\s*text\/html|on\w+\s*=/i;
 const VIETNAMESE_NAME_REGEX = /^[\p{L}\s]+$/u;
 // Regex for Username: alphanumeric and underscore only
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
+// Regex for Password: at least 6 characters, at least 1 uppercase, 1 lowercase, 1 digit
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
 
 const RegisterPage = () => {
   const dispatch = useDispatch();
@@ -79,13 +81,15 @@ const RegisterPage = () => {
       errors.username = 'Tên đăng nhập chỉ gồm chữ cái không dấu (a-z), chữ số (0-9) và dấu gạch dưới (_).';
     }
 
-    // 3. Password Validation: No injection strings, length 3-100
+    // 3. Password Validation: No injection strings, length 6-100, must contain uppercase, lowercase, and number
     if (!formData.password) {
       errors.password = 'Vui lòng nhập mật khẩu.';
     } else if (MALICIOUS_REGEX.test(formData.password)) {
       errors.password = 'Mật khẩu chứa ký tự hoặc đoạn mã không an toàn.';
-    } else if (formData.password.length < 3 || formData.password.length > 100) {
-      errors.password = 'Mật khẩu phải từ 3 đến 100 ký tự.';
+    } else if (formData.password.length < 6 || formData.password.length > 100) {
+      errors.password = 'Mật khẩu phải có độ dài từ 6 đến 100 ký tự.';
+    } else if (!PASSWORD_REGEX.test(formData.password)) {
+      errors.password = 'Mật khẩu phải bao gồm chữ hoa, chữ thường và chữ số.';
     }
 
     // 4. Confirm Password Validation
@@ -160,7 +164,7 @@ const RegisterPage = () => {
                 <Form.Group className="mb-3" controlId="registerPassword">
                   <Form.Label className="fw-semibold small">Mật khẩu <span className="text-danger">*</span></Form.Label>
                   <InputGroup hasValidation>
-                    <Form.Control type={showPassword ? 'text' : 'password'} name="password" placeholder="Nhập mật khẩu (tối thiểu 3 ký tự)" value={formData.password} onChange={handleChange} isInvalid={!!validationErrors.password} disabled={loading} autoComplete="new-password" />
+                    <Form.Control type={showPassword ? 'text' : 'password'} name="password" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự: gồm chữ hoa, thường và số)" value={formData.password} onChange={handleChange} isInvalid={!!validationErrors.password} disabled={loading} autoComplete="new-password" />
                     <Button variant="outline-secondary" type="button" onClick={() => setShowPassword((prev) => !prev)} disabled={loading} title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>
                       {showPassword ? '🙈' : '👁️'}
                     </Button>

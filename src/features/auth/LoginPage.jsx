@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Badge, InputGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { loginUser, clearAuthError } from './authSlice';
 
 const MALICIOUS_REGEX = /<[^>]*>|javascript:|data:\s*text\/html|on\w+\s*=/i;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
 
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -80,6 +81,10 @@ const LoginPage = () => {
       errors.password = 'Vui lòng nhập mật khẩu.';
     } else if (MALICIOUS_REGEX.test(formData.password)) {
       errors.password = 'Mật khẩu chứa ký tự hoặc đoạn mã không an toàn.';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Mật khẩu phải có tối thiểu 6 ký tự.';
+    } else if (!PASSWORD_REGEX.test(formData.password)) {
+      errors.password = 'Mật khẩu phải bao gồm chữ hoa, chữ thường và chữ số.';
     }
     return errors;
   };
@@ -100,12 +105,6 @@ const LoginPage = () => {
         password: formData.password,
       })
     );
-  };
-
-  const handleQuickFill = (username, password) => {
-    setFormData({ username, password });
-    setValidationErrors({ username: '', password: '' });
-    dispatch(clearAuthError());
   };
 
   return (
@@ -168,7 +167,7 @@ const LoginPage = () => {
                     <Form.Control
                       type={showPassword ? 'text' : 'password'}
                       name="password"
-                      placeholder="Nhập mật khẩu"
+                      placeholder="Nhập mật khẩu (tối thiểu 6 ký tự: gồm chữ hoa, thường và số)"
                       value={formData.password}
                       onChange={handleChange}
                       isInvalid={!!validationErrors.password}
@@ -222,20 +221,6 @@ const LoginPage = () => {
                     Đăng ký ngay
                   </Link>
                 </p>
-              </div>
-
-              <div className="mt-4 pt-3 border-top">
-                <p className="text-muted small fw-semibold mb-2">
-                  Tài khoản thử nghiệm (Demo):
-                </p>
-                <div className="d-flex flex-wrap gap-2">
-                  <Button variant="outline-secondary" size="sm" className="small" onClick={() => handleQuickFill('admin', '123')} disabled={loading}>
-                    <Badge bg="danger" className="me-1">Admin</Badge> admin / 123
-                  </Button>
-                  <Button variant="outline-secondary" size="sm" className="small" onClick={() => handleQuickFill('customer', '123')} disabled={loading}>
-                    <Badge bg="success" className="me-1">Customer</Badge> customer / 123
-                  </Button>
-                </div>
               </div>
             </Card.Body>
           </Card>

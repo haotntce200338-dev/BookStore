@@ -1,0 +1,120 @@
+/* ==========================================================================
+   BookStore Global CSS & Layout (FER202)
+   ========================================================================== */
+
+/* Flexbox layout container to keep footer stuck to the bottom (Sticky Footer) */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Main content area expands to push footer to the bottom */
+.main-content {
+  flex: 1 0 auto;
+}
+
+/* Subtle primary color transition on hover */
+.hover-primary {
+  transition: color 0.15s ease-in-out;
+}
+
+.hover-primary:hover {
+  color: #0d6efd !important;
+}
+
+/* ==========================================================================
+   Book Card & Grid Specifications (guidelines.md Section 4.1)
+   ========================================================================== */
+
+/* Book card with subtle elevation and hover lift */
+.book-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Fixed cover image aspect ratio: 260px height, object-fit cover to prevent distortion */
+.book-card-img {
+  height: 260px;
+  width: 100%;
+  object-fit: cover;
+  background-color: #f1f3f5;
+  transition: opacity 0.2s ease;
+}
+
+/* Limit book title to a maximum of 2 lines */
+.book-title-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 48px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Current selling price: mandatory red (#DC3545) and bold */
+.book-price-current {
+  color: #dc3545;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+/* Struck-through original price in muted gray */
+.book-price-original {
+  color: #adb5bd;
+  text-decoration: line-through;
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   Shopping Cart Specifications (guidelines.md Section 3 & 4)
+   ========================================================================== */
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cart-item-row {
+  transition: background-color 0.15s ease-in-out;
+}
+
+.cart-item-row:hover {
+  background-color: #fafbfc;
+}
+
+.cart-item-row:last-child {
+  border-bottom: none !important;
+}
+
+/* ==========================================================================
+   Modern Editorial Search Toolbar (BookList)
+   ========================================================================== */
+
+.search-input-group {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.search-input-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15) !important;
+}
+
+.search-input-group:focus-within .input-group-text,
+.search-input-group:focus-within .form-control,
+.search-input-group:focus-within .btn {
+  border-color: #86b7fe !important;
+}

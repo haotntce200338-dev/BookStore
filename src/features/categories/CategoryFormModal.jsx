@@ -55,11 +55,8 @@ const CategoryFormModal = ({ show, onHide, onSuccess, categoryToEdit = null }) =
 
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Compute next category code automatically for create mode
+  // Compute next category code automatically for create mode in the background
   const nextCategoryCode = generateNextCategoryCode(categories, 1);
-  const currentCategoryCode = isEditMode
-    ? (categoryToEdit?.id || '')
-    : nextCategoryCode;
 
   // Reset or prefill form when modal opens or closes
   useEffect(() => {
@@ -197,29 +194,6 @@ const CategoryFormModal = ({ show, onHide, onSuccess, categoryToEdit = null }) =
               {submitError}
             </Alert>
           )}
-
-          {/* Category Code Field */}
-          <Form.Group className="mb-3" controlId="categoryCode">
-            <Form.Label className="fw-semibold small">
-              {isEditMode ? 'Mã thể loại (Cố định):' : 'Mã thể loại (Tự động tạo):'}
-            </Form.Label>
-            <Form.Control
-              type="text"
-              value={
-                isEditMode
-                  ? `${currentCategoryCode} (Mã định danh)`
-                  : `${nextCategoryCode} (Hệ thống tự cấp)`
-              }
-              disabled
-              readOnly
-              className="bg-light fw-bold text-primary font-monospace"
-            />
-            <Form.Text className="text-muted small">
-              {isEditMode
-                ? 'Mã thể loại không thể thay đổi sau khi tạo.'
-                : 'Quy tắc mã thể loại: cat-1, cat-2, cat-3...'}
-            </Form.Text>
-          </Form.Group>
 
           {/* Category Name */}
           <Form.Group className="mb-3" controlId="categoryName">

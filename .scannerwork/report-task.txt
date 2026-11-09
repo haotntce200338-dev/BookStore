@@ -1,0 +1,6 @@
+projectKey=BookStore_FER202
+serverUrl=http://localhost:9000
+serverVersion=26.11.0.134175
+dashboardUrl=http://localhost:9000/dashboard?id=BookStore_FER202
+ceTaskId=7208f6ac-6796-440d-a788-9cb91b350c2e
+ceTaskUrl=http://localhost:9000/api/ce/task?id=7208f6ac-6796-440d-a788-9cb91b350c2e
