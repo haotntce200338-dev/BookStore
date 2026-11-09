@@ -32,6 +32,7 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
   const categories = useSelector((state) => state.categories?.categories || []);
   const isEditMode = Boolean(bookToEdit);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState({});
   const [validated, setValidated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -53,11 +54,84 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
       image: String(bookToEdit.image || ''),
       description: String(bookToEdit.description || '')
     } : { ...EMPTY_FORM });
+    setErrors({});
     setValidated(false);
     setSubmitting(false);
     setErrorMessage(null);
     setCategoryTouched(false);
   }, [show, bookToEdit, categories]);
+
+  const validateForm = (data) => {
+    const errs = {};
+
+    const trimmedCategory = String(data.categoryName || '').trim();
+    if (!trimmedCategory) {
+      errs.categoryName = 'Vui lòng nhập hoặc chọn danh mục / thể loại.';
+    } else if (/\d/.test(trimmedCategory)) {
+      errs.categoryName = 'Danh mục / thể loại không được chứa chữ số.';
+    } else if (!/^[\p{L}\s-]+$/u.test(trimmedCategory)) {
+      errs.categoryName = 'Danh mục / thể loại không được chứa ký tự đặc biệt.';
+    } else if (trimmedCategory.length > 50) {
+      errs.categoryName = `Danh mục / thể loại không được vượt quá 50 ký tự (hiện tại: ${trimmedCategory.length} ký tự).`;
+    }
+
+    const trimmedTitle = String(data.title || '').trim();
+    if (!trimmedTitle) {
+      errs.title = 'Vui lòng nhập tên cuốn sách.';
+    } else if (trimmedTitle.length > 50) {
+      errs.title = `Tên sách không được vượt quá 50 ký tự (hiện tại: ${trimmedTitle.length} ký tự).`;
+    }
+
+    const trimmedAuthor = String(data.author || '').trim();
+    if (!trimmedAuthor) {
+      errs.author = 'Vui lòng nhập tên tác giả.';
+    } else if (trimmedAuthor.length > 25) {
+      errs.author = `Tên tác giả không được vượt quá 25 ký tự (hiện tại: ${trimmedAuthor.length} ký tự).`;
+    }
+
+    const rawPrice = String(data.price || '').trim();
+    if (!rawPrice) {
+      errs.price = 'Vui lòng nhập giá bán.';
+    } else if (!/^\d+$/.test(rawPrice)) {
+      errs.price = 'Giá bán không được chứa ký tự đặc biệt, dấu âm hoặc chữ cái.';
+    } else if (Number(rawPrice) <= 0) {
+      errs.price = 'Giá bán phải là số lớn hơn 0 (không được là số âm hoặc số 0).';
+    } else if (Number(rawPrice) > 999999999) {
+      errs.price = 'Giá bán không được vượt quá 999.999.999 VNĐ.';
+    }
+
+    const rawOriginalPrice = String(data.originalPrice || '').trim();
+    if (!rawOriginalPrice) {
+      errs.originalPrice = 'Vui lòng nhập giá gốc.';
+    } else if (!/^\d+$/.test(rawOriginalPrice)) {
+      errs.originalPrice = 'Giá gốc không được chứa ký tự đặc biệt, dấu âm hoặc chữ cái.';
+    } else if (Number(rawOriginalPrice) <= 0) {
+      errs.originalPrice = 'Giá gốc phải là số lớn hơn 0 (không được là số âm hoặc số 0).';
+    } else if (Number(rawOriginalPrice) > 999999999) {
+      errs.originalPrice = 'Giá gốc không được vượt quá 999.999.999 VNĐ.';
+    }
+
+    const rawStock = String(data.stock || '').trim();
+    if (rawStock !== '') {
+      if (!/^\d+$/.test(rawStock)) {
+        errs.stock = 'Số lượng tồn kho không được chứa ký tự đặc biệt, dấu âm hoặc chữ cái.';
+      } else if (Number(rawStock) < 0) {
+        errs.stock = 'Số lượng tồn kho không được là số âm.';
+      } else if (Number(rawStock) > 999) {
+        errs.stock = 'Số lượng tồn kho không được vượt quá 999 cuốn.';
+      }
+    }
+
+    const rawImage = String(data.image || '').trim();
+    if (rawImage !== '') {
+      const urlPattern = /^https?:\/\/.+/i;
+      if (!urlPattern.test(rawImage)) {
+        errs.image = 'Vui lòng nhập đúng định dạng link URL (bắt đầu bằng http:// hoặc https://).';
+      }
+    }
+
+    return errs;
+  };
 
   // Resolve the category name when categories load after the modal opens.
   useEffect(() => {
@@ -69,8 +143,16 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((previous) => ({ ...previous, [name]: value }));
-    if (name === 'categoryName') setCategoryTouched(true);
+    const nextFormData = { ...formData, [name]: value };
+    setFormData(nextFormData);
+
+    if (name === 'categoryName') {
+      setCategoryTouched(true);
+    }
+
+    if (validated) {
+      setErrors(validateForm(nextFormData));
+    }
   };
 
   // Match the entered category name, preserving the original ID if unchanged.
@@ -92,27 +174,23 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    if (!form.checkValidity()) {
+    setValidated(true);
+
+    const validationErrors = validateForm(formData);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
       e.stopPropagation();
-      setValidated(true);
+      setErrorMessage('Vui lòng kiểm tra và sửa lại các trường thông tin bị lỗi (viền đỏ) bên dưới.');
       return;
     }
 
-    if (!formData.title.trim() || !formData.author.trim()) {
-      setValidated(true);
-      setErrorMessage('Tên sách và tác giả không được để trống hoặc chỉ chứa khoảng trắng.');
-      return;
-    }
+    setSubmitting(true);
+    setErrorMessage(null);
 
-    const price = Number(formData.price);
-    const originalPrice = formData.originalPrice === '' ? 0 : Number(formData.originalPrice);
-    const stock = formData.stock === '' ? 0 : Number(formData.stock);
-    if (![price, originalPrice, stock].every(Number.isFinite) || price < 0 || originalPrice < 0 || stock < 0) {
-      setValidated(true);
-      setErrorMessage('Giá bán, giá gốc và số lượng tồn kho phải là số hợp lệ và không được nhỏ hơn 0.');
-      return;
-    }
+    const price = Number(formData.price.trim());
+    const originalPrice = formData.originalPrice.trim() !== '' ? Number(formData.originalPrice.trim()) : 0;
+    const stock = formData.stock.trim() !== '' ? Number(formData.stock.trim()) : 0;
 
     setSubmitting(true);
     setErrorMessage(null);
@@ -192,7 +270,7 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
       <Modal.Header closeButton={!submitting}>
         <Modal.Title className="fw-bold">{isEditMode ? '✏️ Cập Nhật Thông Tin Sách' : '📚 Thêm Sách Mới Vào Hệ Thống'}</Modal.Title>
       </Modal.Header>
-      <Form noValidate validated={validated} onSubmit={handleSubmit}>
+      <Form noValidate onSubmit={handleSubmit}>
         <Modal.Body>
           {errorMessage && <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>{errorMessage}</Alert>}
           <Row className="g-3">
@@ -205,7 +283,9 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
             </Col>
             <Col md={6}>
               <Form.Group controlId="bookCategory">
-                <Form.Label className="fw-semibold">Danh mục / Thể loại:</Form.Label>
+                <Form.Label className="fw-semibold">
+                  Danh mục / Thể loại <span className="text-danger">*</span>:
+                </Form.Label>
                 <Form.Control
                   type="text"
                   name="categoryName"
@@ -213,6 +293,7 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
                   value={formData.categoryName}
                   onChange={handleChange}
                   placeholder="Chọn hoặc nhập thể loại..."
+                  isInvalid={validated && Boolean(errors.categoryName)}
                   disabled={submitting}
                 />
                 <datalist id="categoryOptions">
@@ -220,45 +301,129 @@ const BookFormModal = ({ show, onHide, onSuccess, bookToEdit = null }) => {
                     <option key={cat.id} value={cat.name} />
                   ))}
                 </datalist>
+                <Form.Control.Feedback type="invalid">
+                  {errors.categoryName}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={12}>
               <Form.Group controlId="bookTitle">
-                <Form.Label className="fw-semibold">Tên sách <span className="text-danger">*</span>:</Form.Label>
-                <Form.Control type="text" name="title" value={formData.title} onChange={handleChange} placeholder="Nhập tên sách..." required disabled={submitting} />
-                <Form.Control.Feedback type="invalid">Vui lòng nhập tên cuốn sách.</Form.Control.Feedback>
+                <div className="d-flex justify-content-between align-items-center">
+                  <Form.Label className="fw-semibold">
+                    Tên sách <span className="text-danger">*</span>:
+                  </Form.Label>
+                  <small className={`text-muted ${formData.title.length > 50 ? 'text-danger fw-bold' : ''}`}>
+                    {formData.title.length}/50 ký tự
+                  </small>
+                </div>
+                <Form.Control
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="Nhập tên sách (tối đa 50 ký tự)..."
+                  isInvalid={validated && Boolean(errors.title)}
+                  disabled={submitting}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.title}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group controlId="bookAuthor">
-                <Form.Label className="fw-semibold">Tác giả <span className="text-danger">*</span>:</Form.Label>
-                <Form.Control type="text" name="author" value={formData.author} onChange={handleChange} placeholder="Nhập tên tác giả..." required disabled={submitting} />
-                <Form.Control.Feedback type="invalid">Vui lòng nhập tên tác giả.</Form.Control.Feedback>
+                <div className="d-flex justify-content-between align-items-center">
+                  <Form.Label className="fw-semibold">
+                    Tác giả <span className="text-danger">*</span>:
+                  </Form.Label>
+                  <small className={`text-muted ${formData.author.length > 25 ? 'text-danger fw-bold' : ''}`}>
+                    {formData.author.length}/25 ký tự
+                  </small>
+                </div>
+                <Form.Control
+                  type="text"
+                  name="author"
+                  value={formData.author}
+                  onChange={handleChange}
+                  placeholder="Nhập tên tác giả (tối đa 25 ký tự)..."
+                  isInvalid={validated && Boolean(errors.author)}
+                  disabled={submitting}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.author}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group controlId="bookStock">
-                <Form.Label className="fw-semibold">Số lượng tồn kho:</Form.Label>
-                <Form.Control type="number" min="0" name="stock" value={formData.stock} onChange={handleChange} placeholder="Mặc định: 10" disabled={submitting} />
+                <Form.Label className="fw-semibold">Số lượng tồn kho :</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleChange}
+                  placeholder="Ví dụ: 10 (từ 0 đến 999)"
+                  isInvalid={validated && Boolean(errors.stock)}
+                  disabled={submitting}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.stock}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group controlId="bookOriginalPrice">
-                <Form.Label className="fw-semibold">Giá gốc (VNĐ):</Form.Label>
-                <Form.Control type="number" min="0" name="originalPrice" value={formData.originalPrice} onChange={handleChange} placeholder="Ví dụ: 120000" disabled={submitting} />
+                <Form.Label className="fw-semibold">
+                  Giá gốc (VNĐ) <span className="text-danger">*</span>:
+                </Form.Label>
+                <Form.Control
+                  type="text"
+                  name="originalPrice"
+                  value={formData.originalPrice}
+                  onChange={handleChange}
+                  placeholder="Ví dụ: 120000 (tối đa 999999999)"
+                  isInvalid={validated && Boolean(errors.originalPrice)}
+                  disabled={submitting}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.originalPrice}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group controlId="bookPrice">
-                <Form.Label className="fw-semibold">Giá bán (VNĐ) <span className="text-danger">*</span>:</Form.Label>
-                <Form.Control type="number" min="0" name="price" value={formData.price} onChange={handleChange} placeholder="Ví dụ: 99000" required disabled={submitting} />
-                <Form.Control.Feedback type="invalid">Vui lòng nhập giá bán hợp lệ.</Form.Control.Feedback>
+                <Form.Label className="fw-semibold">
+                  Giá bán (VNĐ) <span className="text-danger">*</span>:
+                </Form.Label>
+                <Form.Control
+                  type="text"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  placeholder="Ví dụ: 99000 (tối đa 999999999)"
+                  isInvalid={validated && Boolean(errors.price)}
+                  disabled={submitting}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.price}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={12}>
               <Form.Group controlId="bookImage">
                 <Form.Label className="fw-semibold">Link ảnh bìa (URL):</Form.Label>
-                <Form.Control type="url" name="image" value={formData.image} onChange={handleChange} placeholder="https://example.com/hinh-anh-bia-sach.jpg" disabled={submitting} />
+                <Form.Control
+                  type="text"
+                  name="image"
+                  value={formData.image}
+                  onChange={handleChange}
+                  placeholder="https://example.com/hinh-anh-bia-sach.jpg"
+                  isInvalid={validated && Boolean(errors.image)}
+                  disabled={submitting}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.image}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={12}>
