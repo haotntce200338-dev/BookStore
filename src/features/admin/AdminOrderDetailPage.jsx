@@ -102,6 +102,7 @@ const AdminOrderDetailPage = () => {
       const cancelledAt = new Date().toISOString();
       await axios.patch(`http://localhost:3001/orders/${order.id}`, {
         status: 'Cancelled',
+        cancelReason: cleanReason,
         cancellationReason: cleanReason,
         cancelledAt: cancelledAt,
       });
@@ -110,6 +111,7 @@ const AdminOrderDetailPage = () => {
       setOrder((prev) => ({
         ...prev,
         status: 'Cancelled',
+        cancelReason: cleanReason,
         cancellationReason: cleanReason,
         cancelledAt: cancelledAt,
       }));
@@ -305,9 +307,9 @@ const AdminOrderDetailPage = () => {
                 </div>
               )}
 
-              {isCancelled && order.cancellationReason && (
+              {isCancelled && (order.cancellationReason || order.cancelReason) && (
                 <div className="mt-2 p-2 bg-danger-subtle text-danger rounded border border-danger-subtle">
-                  <strong>Lý do hủy đơn:</strong> {order.cancellationReason}
+                  <strong>Lý do hủy đơn:</strong> {order.cancellationReason || order.cancelReason}
                 </div>
               )}
             </Card.Body>

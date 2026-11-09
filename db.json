@@ -27,7 +27,7 @@
       "categoryId": "cat-1",
       "price": 150000,
       "originalPrice": 180000,
-      "stock": 29,
+      "stock": 28,
       "image": "https://picsum.photos/300/400?random=1",
       "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap.",
       "isDeleted": false
@@ -39,7 +39,7 @@
       "categoryId": "cat-3",
       "price": 79000,
       "originalPrice": 95000,
-      "stock": 43,
+      "stock": 42,
       "image": "https://picsum.photos/300/400?random=2",
       "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
       "isDeleted": false
@@ -177,6 +177,46 @@
       "totalAmount": 916000,
       "status": "Pending",
       "orderDate": "2026-11-08T09:42:57.265Z"
+    },
+    {
+      "id": "XOEP2uSY82s",
+      "userId": "u-2",
+      "customerName": "Mèo Béo",
+      "phone": "0812345679",
+      "address": "abc xyz",
+      "note": "giao đầu ngõ",
+      "paymentMethod": "cod",
+      "items": [
+        {
+          "bookId": "b-102",
+          "title": "Nhà Giả Kim",
+          "price": 79000,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 79000,
+      "status": "Pending",
+      "orderDate": "2026-11-09T13:27:41.836Z"
+    },
+    {
+      "id": "Fr_KOvXbPoM",
+      "userId": "u-2",
+      "customerName": "Mèo béo",
+      "phone": "0812345679",
+      "address": "abc xyz",
+      "note": "giao đầu ngõ",
+      "paymentMethod": "cod",
+      "items": [
+        {
+          "bookId": "b-101",
+          "title": "Học ReactJS Toàn Tập",
+          "price": 150000,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 150000,
+      "status": "Pending",
+      "orderDate": "2026-11-09T13:28:26.390Z"
     }
   ],
   "users": [

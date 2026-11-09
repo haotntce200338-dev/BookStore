@@ -247,14 +247,14 @@ function OrderHistoryPage() {
                   </strong>
                 </div>
 
-                {/* Display cancellation reason */}
-                {order.status === 'Cancelled' && order.cancelReason && (
+                {/* Display cancellation reason (supports both customer cancel and admin reject) */}
+                {order.status === 'Cancelled' && (order.cancelReason || order.cancellationReason) && (
                   <Alert variant="light" className="mt-3 mb-0 border">
                     <strong className="text-danger">
                       Lý do hủy đơn:
                     </strong>
                     <p className="mb-0 mt-1">
-                      {order.cancelReason}
+                      {order.cancelReason || order.cancellationReason}
                     </p>
                   </Alert>
                 )}
