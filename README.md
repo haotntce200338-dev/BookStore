@@ -29,7 +29,7 @@
 
 * **Course:** FER202 — Front-End Web Development with ReactJS
 * **Institution:** FPT University Can Tho Campus
-* **Class / Term:** SE18 / Fall 2026
+* **Class / Term:** SE2002 / Fall 2026
 * **Development Methodology:** Iterative & Incremental (Agile Framework across 2 Iterations)
 
 ---
@@ -123,8 +123,8 @@ Pre-configured user accounts are available in [`db.json`](./db.json) for evaluat
 
 | Role | Username | Password | Permissions & Available Routes |
 | :--- | :---: | :---: | :--- |
-| **Administrator** | `admin` | `123` | Full access to `/admin/dashboard`, `/admin/books`, `/admin/categories`, order approval & rejection |
-| **Customer** | `customer` | `123` | Browsing catalog, shopping cart, checkout, order placement, personal order history |
+| **Administrator** | `admin` | `admin123` | Full access to `/admin/dashboard`, `/admin/books`, `/admin/categories`, order approval & rejection |
+| **Customer** | `customer` | `customer123` | Browsing catalog, shopping cart, checkout, order placement, personal order history |
 
 ---
 
