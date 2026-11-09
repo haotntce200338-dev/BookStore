@@ -40,6 +40,7 @@ export const cancelCustomerOrder = createAsyncThunk(
       const response = await axios.patch(`${API_URL}/${orderId}`, {
         status: 'Cancelled',
         cancelReason: reason.trim(),
+        cancellationReason: reason.trim(),
       });
 
       return response.data;

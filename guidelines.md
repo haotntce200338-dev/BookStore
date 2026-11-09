@@ -39,7 +39,7 @@ Trước khi bắt tay vào tạo trang hoặc component mới, mỗi thành vi�
 
 ### 3.1 Phân hệ Cửa hàng (Customer Storefront)
 * **Dành cho:** Khách vãng lai (Guest) và Khách hàng đã đăng nhập (`role === 'customer'`).
-* **Phạm vi trang:** Trang chủ (`/`), Chi tiết sách (`/books/:id`), Giỏ hàng (`/cart`), Thanh toán (`/checkout`), Lịch sử đơn hàng cá nhân.
+* **Phạm vi trang:** Trang chủ (`/`), Chi tiết sách (`/books/:id`), Giỏ hàng (`/cart`), Thanh toán (`/checkout`), Lịch sử đơn hàng cá nhân (`/orders`).
 * **Quy tắc với Admin:** 
   * Khi tài khoản có quyền Admin đăng nhập, trên thanh Navbar **phải ẩn nút Giỏ hàng 🛒**, thay bằng nút `[🛡️ Cổng Quản Trị]`.
   * Trên thẻ sách (`BookCard`) và trang chi tiết (`BookDetail`), tài khoản Admin **không nhìn thấy nút "Thêm vào giỏ" hay "Mua ngay"**, mà hiển thị nút liên kết đến trang quản trị kho sách.
@@ -47,7 +47,7 @@ Trước khi bắt tay vào tạo trang hoặc component mới, mỗi thành vi�
 
 ### 3.2 Phân hệ Quản trị (Admin Portal)
 * **Dành cho:** Duy nhất tài khoản Quản trị viên (`role === 'admin'`).
-* **Phạm vi trang:** `/admin/dashboard`, `/admin/books`, `/admin/categories`.
+* **Phạm vi trang:** `/admin/dashboard`, `/admin/orders/:orderId`, `/admin/books`, `/admin/categories`.
 * **Quy tắc giao diện:** Tuyệt đối không chứa nút Giỏ hàng, không có các thao tác mua sắm. Toàn bộ các trang con đều được bọc bởi `ProtectedRoute allowedRoles={['admin']}`.
 * **Tách bạch Component:** Không được viết gộp 1 component vừa render cho Khách vừa render bảng cho Admin bằng biến `mode="admin"`. Phải tách thành các component riêng biệt (ví dụ: `BookList.jsx` cho Khách và `AdminBookListPage.jsx` cho Admin).
 
@@ -58,7 +58,7 @@ Trước khi bắt tay vào tạo trang hoặc component mới, mỗi thành vi�
 ### 4.1 Bảng màu quy chuẩn (Color Palette)
 
 | Vai trò | Mã màu | Cách sử dụng trên giao diện |
-| :--- | :---: | :--- |
+| :--- | :---: | :---: |
 | **Brand Primary (Xanh tri thức)** | `#0D6EFD` | Nút hành động chính (CTA: Mua ngay, Thêm vào giỏ, Lưu sách), active link |
 | **Brand Primary Hover** | `#0B5ED7` | Trạng thái rê chuột (hover/focus) của nút chính |
 | **Accent Warm (Vàng cam ấm)** | `#D97706` | Điểm nhấn giá bán, sao đánh giá, badge giảm giá, thông báo chú ý |
@@ -89,10 +89,10 @@ Trước khi bắt tay vào tạo trang hoặc component mới, mỗi thành vi�
 
 1. **Cơ chế Xóa mềm:**
    * Mọi đối tượng sách (`books`) và thể loại (`categories`) trong file `db.json` đều có trường `"isDeleted": false`.
-   * Khi người dùng bấm "Xóa" một cuốn sách hoặc thể loại, lập trình viên gửi request `PATCH` cập nhật `"isDeleted": true`.
+   * Khi người dùng bấm "Xóa" một cuốn sách hoặc thể loại, gửi request `PATCH` cập nhật `"isDeleted": true`.
 2. **Quy tắc hiển thị (Filtering):**
    * Phía Khách hàng (Trang chủ, Chi tiết, Gợi ý): **Bắt buộc lọc bỏ** những cuốn sách đã bị xóa mềm (`books.filter(b => !b.isDeleted)`).
-   * Phía Admin: Bảng quản trị mặc định ẩn sách xóa mềm, hoặc có thể làm thêm nút/tab xem "Sách đã xóa" để khôi phục.
+   * Phía Admin: Bảng quản trị mặc định ẩn sách xóa mềm, đảm bảo giao diện gọn gàng.
 3. **Bảo toàn dữ liệu đơn hàng:**
    * Khi sách bị xóa mềm, các đơn hàng cũ trong bảng `orders` vẫn giữ nguyên được tên sách và giá tiền mà không bị lỗi mồ côi dữ liệu.
 
@@ -135,7 +135,8 @@ src/
 │   └── ProtectedRoute.jsx         <-- ProtectedRoute & CustomerOnlyRoute
 ├── features/                      <-- Chia theo từng phân hệ nghiệp vụ
 │   ├── admin/                     <-- Cổng Quản trị viên
-│   │   └── AdminDashboardPage.jsx <-- Bảng điều khiển KPI & duyệt đơn hàng
+│   │   ├── AdminDashboardPage.jsx <-- Bảng điều khiển KPI doanh thu & đơn hàng
+│   │   └── AdminOrderDetailPage.jsx <-- Chi tiết đơn hàng, duyệt & từ chối đơn
 │   ├── auth/                      <-- Đăng nhập, đăng ký, phiên làm việc
 │   │   ├── authSlice.js
 │   │   ├── LoginPage.jsx
@@ -147,16 +148,22 @@ src/
 │   │   ├── BookDetail.jsx         <-- Chi tiết sách (chặn Admin mua hàng)
 │   │   ├── RelatedBooks.jsx       <-- Sách gợi ý cùng thể loại
 │   │   ├── AdminBookListPage.jsx  <-- Bảng quản lý kho sách của Admin
-│   │   └── BookFormModal.jsx      <-- Modal Thêm/Sửa sách của Admin
+│   │   └── BookFormModal.jsx      <-- Modal Thêm/Sửa sách của Admin (tự sinh mã)
 │   ├── cart/                      <-- Giỏ hàng & Thanh toán (Khách hàng)
 │   │   ├── cartSlice.js
 │   │   ├── CartPage.jsx
 │   │   ├── CartItemRow.jsx
-│   │   └── CheckoutPage.jsx
-│   └── categories/                <-- Quản lý Thể loại sách
-│       ├── categorySlice.js
-│       ├── CategoryListPage.jsx
-│       └── CategoryFormModal.jsx
+│   │   ├── CartSummary.jsx
+│   │   ├── CheckoutPage.jsx
+│   │   └── OrderSuccessView.jsx
+│   ├── categories/                <-- Quản lý Thể loại sách
+│   │   ├── categorySlice.js
+│   │   ├── CategoryListPage.jsx
+│   │   └── CategoryFormModal.jsx
+│   └── orders/                    <-- Đơn hàng Khách hàng
+│       ├── orderSlice.js
+│       └── OrderHistoryPage.jsx
+├── App.css                        <-- CSS tùy chỉnh toàn hệ thống
 ├── App.js                         <-- Khai báo Routes chính
 └── index.js
 ```
@@ -181,8 +188,8 @@ src/
 > [!CAUTION]
 > Các lỗi dưới đây sẽ gây sập hệ thống hoặc làm mất điểm đồ án rất nặng, nghiêm cấm các thành viên vi phạm:
 
-1. **KHÔNG tự ý `import` hoặc cài đặt thêm thư viện ngoài:** Dự án đã thống nhất bộ thư viện trong `package.json` (React, Redux Toolkit, React-Bootstrap, Axios). Tuyệt đối không tự ý cài thêm Ant Design, Tailwind, MUI, hay thư viện lạ (như bài học lỗi `bcryptjs`) làm sập quá trình build của cả nhóm.
-2. **KHÔNG tự ý vẽ thêm các tính năng "ảo" không có trong CSDL:** Mọi tính năng đều phải gắn liền với các bảng thực tế trong `db.json` (`books`, `categories`, `orders`, `users`). Tuyệt đối không tự ý thêm các tính năng ảo (như Favorites, Review 5 sao) khi CSDL chưa có bảng lưu trữ.
+1. **KHÔNG tự ý `import` hoặc cài đặt thêm thư viện ngoài:** Dự án đã thống nhất bộ thư viện trong `package.json` (React, Redux Toolkit, React-Bootstrap, Axios). Tuyệt đối không tự ý cài thêm Ant Design, Tailwind, MUI, hay thư viện lạ làm sập quá trình build của cả nhóm.
+2. **KHÔNG tự ý vẽ thêm các tính năng "ảo" không có trong CSDL:** Mọi tính năng đều phải gắn liền với các bảng thực tế trong `db.json` (`books`, `categories`, `orders`, `users`).
 3. **KHÔNG gộp giao diện Khách hàng và Admin vào chung một Component:** Phải tách bạch riêng biệt giữa component hiển thị cho Khách và component bảng quản trị của Admin.
 4. **KHÔNG cho phép Admin thực hiện luồng mua sắm:** Admin không được thêm giỏ hàng, không được checkout.
 5. **KHÔNG xóa cứng (Hard Delete) dữ liệu:** Phải dùng cờ `isDeleted: true` để bảo vệ toàn vẹn lịch sử đơn hàng.
@@ -192,10 +199,12 @@ src/
 
 ## 11. Bảng phân công trách nhiệm chi tiết (Nhóm 5 thành viên)
 
+*(Khớp chính xác 100% với Backlog đồ án Google Sheets)*
+
 | Thành viên | MSSV | Vai trò | Files & Thư mục phụ trách chính | Module nghiệp vụ |
 | :--- | :---: | :---: | :--- | :--- |
-| **Trần Nguyễn Thanh Hào** | **CE200338** | **Leader** | `src/features/books/BookList.jsx`, `src/components/Navbar.jsx`, `Footer.jsx` | Khám phá sách Khách hàng, Tìm kiếm realtime, Lọc thể loại, Khung Layout cửa hàng. |
-| **Trương Anh Tuấn** | **CE200779** | Member | `src/features/books/BookDetail.jsx`, `RelatedBooks.jsx` | Chi tiết sản phẩm, Tồn kho, Sách gợi ý, Lịch sử đơn hàng khách hàng (`My Orders`). |
-| **Trương Anh Tuấn** | **CE201233** | Member | `src/features/cart/` (`CartPage.jsx`, `CartItemRow.jsx`, `CheckoutPage.jsx`, `cartSlice.js`) | Toàn bộ luồng Giỏ hàng, Tính tiền realtime, Xác nhận & Đặt hàng (`orders`). |
-| **Lương Trung Hiếu** | **CE201492** | Member | `src/features/books/AdminBookListPage.jsx`, `BookFormModal.jsx` | Phân hệ Quản trị Kho sách Admin (Full 4 CRUD: Xem bảng, Thêm, Sửa, Xóa mềm). |
-| **Đỗ Trần Thiên Phúc** | **CE201183** | Member | `src/features/admin/AdminDashboardPage.jsx`, `src/features/categories/`, `src/features/auth/`, `ProtectedRoute.jsx` | Cổng Quản trị Admin, Dashboard KPI doanh thu, Full 4 CRUD Thể loại, Xác thực & Phân quyền bảo vệ 2 chiều. |
+| **Trần Nguyễn Thanh Hào** | **CE200338** | **Leader** | `src/components/Navbar.jsx`, `Footer.jsx`, `src/features/books/BookList.jsx`, `src/features/admin/AdminDashboardPage.jsx`, `AdminOrderDetailPage.jsx` | Khung layout cửa hàng, Khám phá sách, Tìm kiếm & lọc thể loại, Dashboard KPI doanh thu, Duyệt/Từ chối đơn hàng, Cập nhật & xóa mềm thể loại. |
+| **Trương Anh Tuấn** | **CE200779** | Member | `src/features/books/BookDetail.jsx`, `RelatedBooks.jsx`, `src/features/orders/OrderHistoryPage.jsx`, `orderSlice.js` | Chi tiết sản phẩm, Tồn kho, Sách gợi ý cùng thể loại, Lịch sử đơn hàng khách hàng & Chức năng hủy đơn hàng đã đặt. |
+| **Trương Anh Tuấn** | **CE201233** | Member | `src/features/cart/` (`CartPage.jsx`, `CartItemRow.jsx`, `CartSummary.jsx`, `CheckoutPage.jsx`, `cartSlice.js`) | Toàn bộ luồng Giỏ hàng, Tính tiền realtime, Đồng bộ `localStorage`, Xác nhận & Đặt hàng (`orders`), Trừ tồn kho tự động. |
+| **Lương Trung Hiếu** | **CE201492** | Member | `src/features/books/AdminBookListPage.jsx`, `BookFormModal.jsx` | Phân hệ Quản trị Kho sách Admin (Full CRUD: Xem bảng, Thêm mới, Sửa, Sinh mã `b-101`, Xóa mềm `isDeleted`). |
+| **Đỗ Trần Thiên Phúc** | **CE201183** | Member | `src/features/auth/` (`LoginPage.jsx`, `RegisterPage.jsx`, `authSlice.js`), `src/components/ProtectedRoute.jsx`, `src/features/categories/` (`CategoryListPage.jsx`, `CategoryFormModal.jsx`, `categorySlice.js`) | Hệ thống Xác thực (Đăng nhập, Đăng ký mật khẩu mạnh), Phân quyền bảo vệ 2 chiều (`ProtectedRoute`), Xem danh sách & Tạo mới thể loại sách. |
