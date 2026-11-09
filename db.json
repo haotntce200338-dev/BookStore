@@ -43,6 +43,18 @@
       "image": "https://cdn0.fahasa.com/media/catalog/product/i/m/image_195509_1_36793.jpg",
       "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
       "isDeleted": false
+    },
+    {
+      "id": "b-103",
+      "title": "React Hooks Thực Hành",
+      "author": "FER202 Demo",
+      "categoryId": "cat-1",
+      "price": 129000,
+      "originalPrice": 149000,
+      "stock": 20,
+      "image": "https://placehold.co/300x400?text=React+Hooks",
+      "description": "Thực hành React Hooks, useState, useEffect và Redux Toolkit.",
+      "isDeleted": false
     }
   ],
   "orders": [
