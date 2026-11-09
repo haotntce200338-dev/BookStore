@@ -280,5 +280,5 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 > **Academic Disclaimer:** This software is developed solely for educational and grading purposes in the **FER202 (Front-End Web Development with ReactJS)** course at **FPT University Can Tho Campus**. All book metadata and sample images are utilized strictly under fair educational use.
 
 <div align="center">
-  <sub>FER202 Group Project — Class SE18 / Fall 2026, FPT University Can Tho Campus.</sub>
+  <sub>FER202 Group Project — Class SE2002 / Fall 2026, FPT University Can Tho Campus.</sub>
 </div>
