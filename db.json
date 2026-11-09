@@ -28,7 +28,7 @@
       "price": 150000,
       "originalPrice": 180000,
       "stock": 27,
-      "image": "https://picsum.photos/300/400?random=1",
+      "image": "https://raw.githubusercontent.com/MoonHighway/learning-react/second-edition/learning-react.jpg",
       "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap.",
       "isDeleted": false
     },
@@ -40,7 +40,7 @@
       "price": 79000,
       "originalPrice": 95000,
       "stock": 41,
-      "image": "https://picsum.photos/300/400?random=2",
+      "image": "https://cdn0.fahasa.com/media/catalog/product/i/m/image_195509_1_36793.jpg",
       "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
       "isDeleted": false
     }
