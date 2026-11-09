@@ -22,7 +22,7 @@ const formatPrice = (price) => {
   return Number(price || 0).toLocaleString("vi-VN") + " đ";
 };
 
-// Chuẩn hoá số điện thoại về dạng 10 số (hỗ trợ nhập +84 hoặc 84)
+// Normalize phone number to standard 10-digit format (support +84 or 84 prefix)
 const normalizePhoneNumber = (rawPhone) => {
   let cleaned = String(rawPhone || "").trim().replace(/[\s.-]/g, "");
   if (cleaned.startsWith("+84")) {
@@ -33,7 +33,7 @@ const normalizePhoneNumber = (rawPhone) => {
   return cleaned;
 };
 
-// Định dạng số điện thoại di động Việt Nam: gồm 10 chữ số, bắt đầu bằng số 0 (các đầu số 03, 05, 07, 08, 09)
+// Vietnamese mobile phone format: 10 digits starting with 0 (prefixes: 03, 05, 07, 08, 09)
 const VIETNAMESE_PHONE_REGEX = /^0[35789][0-9]{8}$/;
 
 const CheckoutPage = () => {
@@ -151,7 +151,7 @@ const CheckoutPage = () => {
     let updatedBooks = [];
 
     try {
-      // 1. Kiểm tra tồn kho & lấy giá thực tế từ server cho toàn bộ giỏ hàng (Chống Race Condition & Tampering)
+      // 1. Verify stock availability & fetch actual prices from server (Prevents race conditions & tampering)
       const bookResponses = await Promise.all(
         items.map((cartItem) =>
           axios.get(`${API_BASE_URL}/books/${cartItem.id}`)
@@ -183,7 +183,7 @@ const CheckoutPage = () => {
           );
         }
 
-        // Lấy giá thực tế từ server, ngăn chặn người dùng sửa giá ở localStorage/Redux (Tampering)
+        // Fetch authoritative price from server to prevent client-side tampering (localStorage/Redux)
         const actualPrice = Number(serverBook.price) || 0;
 
         verifiedItems.push({
@@ -196,7 +196,7 @@ const CheckoutPage = () => {
         });
       }
 
-      // Nếu có bất kỳ lỗi tồn kho nào, dừng việc đặt hàng ngay lập tức
+      // Abort order placement immediately if there are stock issues
       if (stockErrors.length > 0) {
         setApiError(
           `Không thể đặt hàng do thay đổi tồn kho:\n• ${stockErrors.join("\n• ")}\nVui lòng cập nhật lại giỏ hàng!`
@@ -205,7 +205,7 @@ const CheckoutPage = () => {
         return;
       }
 
-      // 2. Trừ tồn kho đồng bộ bằng await Promise.all (Giải quyết lỗi items.forEach bất đồng bộ không chờ đợi)
+      // 2. Deduct inventory synchronously using await Promise.all
       await Promise.all(
         verifiedItems.map((vItem) =>
           axios.patch(`${API_BASE_URL}/books/${vItem.bookId}`, {
@@ -214,16 +214,16 @@ const CheckoutPage = () => {
         )
       );
 
-      // Ghi nhận danh sách sách đã trừ kho thành công (phục vụ rollback nếu tạo order lỗi)
+      // Track successfully deducted items to support rollback if order creation fails
       updatedBooks = verifiedItems;
 
-      // 3. Tính toán tổng tiền thực tế dựa trên giá từ server
+      // 3. Compute verified total amount based on authoritative server prices
       const verifiedTotalAmount = verifiedItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
 
-      // 4. Sinh mã đơn hàng tuần tự
+      // 4. Generate sequential order ID
       let nextId = `ord-${Date.now()}`;
       try {
         const ordersRes = await axios.get(`${API_BASE_URL}/orders`);
@@ -243,7 +243,7 @@ const CheckoutPage = () => {
         );
       }
 
-      // 5. Chuẩn bị payload và gửi POST /orders
+      // 5. Construct order payload and send POST /orders
       const newOrder = {
         id: nextId,
         userId: currentUser?.id || "guest",
@@ -265,13 +265,13 @@ const CheckoutPage = () => {
 
       const createRes = await axios.post(`${API_BASE_URL}/orders`, newOrder);
 
-      // 6. Xóa giỏ hàng và chuyển sang màn hình thành công
+      // 6. Clear cart and transition to order success screen
       dispatch(clearCart());
       setPlacedOrder(createRes.data || newOrder);
     } catch (err) {
       console.error("Order placement failed:", err);
 
-      // Rollback tồn kho nếu đã trừ kho nhưng tạo đơn thất bại
+      // Rollback deducted stock if order creation fails
       if (updatedBooks.length > 0) {
         console.warn("Rolling back deducted book stocks...");
         await Promise.all(
