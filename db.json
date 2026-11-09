@@ -27,7 +27,7 @@
       "categoryId": "cat-1",
       "price": 150000,
       "originalPrice": 180000,
-      "stock": 27,
+      "stock": 26,
       "image": "https://raw.githubusercontent.com/MoonHighway/learning-react/second-edition/learning-react.jpg",
       "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap.",
       "isDeleted": false
@@ -39,7 +39,7 @@
       "categoryId": "cat-3",
       "price": 79000,
       "originalPrice": 95000,
-      "stock": 41,
+      "stock": 40,
       "image": "https://cdn0.fahasa.com/media/catalog/product/i/m/image_195509_1_36793.jpg",
       "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
       "isDeleted": false
@@ -243,6 +243,32 @@
       "totalAmount": 229000,
       "status": "Pending",
       "orderDate": "2026-11-09T20:15:12.480Z"
+    },
+    {
+      "id": "UqTkB-EpvpI",
+      "userId": "UnQPPC9bBrQ",
+      "customerName": "Truong Anh Tuan",
+      "phone": "0909123456",
+      "address": "123/diachi",
+      "note": "",
+      "paymentMethod": "cod",
+      "items": [
+        {
+          "bookId": "b-101",
+          "title": "Học ReactJS Toàn Tập",
+          "price": 150000,
+          "quantity": 1
+        },
+        {
+          "bookId": "b-102",
+          "title": "Nhà Giả Kim",
+          "price": 79000,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 229000,
+      "status": "Pending",
+      "orderDate": "2026-11-09T21:08:23.400Z"
     }
   ],
   "users": [
