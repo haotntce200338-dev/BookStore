@@ -27,7 +27,7 @@
       "categoryId": "cat-1",
       "price": 150000,
       "originalPrice": 180000,
-      "stock": 28,
+      "stock": 27,
       "image": "https://picsum.photos/300/400?random=1",
       "description": "Hướng dẫn thực chiến ReactJS, Redux Toolkit và Bootstrap.",
       "isDeleted": false
@@ -39,7 +39,7 @@
       "categoryId": "cat-3",
       "price": 79000,
       "originalPrice": 95000,
-      "stock": 42,
+      "stock": 41,
       "image": "https://picsum.photos/300/400?random=2",
       "description": "Hành trình theo đuổi vận mệnh qua sa mạc của Santiago.",
       "isDeleted": false
@@ -217,6 +217,32 @@
       "totalAmount": 150000,
       "status": "Pending",
       "orderDate": "2026-11-09T13:28:26.390Z"
+    },
+    {
+      "id": "QXhEkngQJFo",
+      "userId": "UnQPPC9bBrQ",
+      "customerName": "Truong Anh Tuan",
+      "phone": "0376388955",
+      "address": "123/Kien Giang",
+      "note": "",
+      "paymentMethod": "cod",
+      "items": [
+        {
+          "bookId": "b-102",
+          "title": "Nhà Giả Kim",
+          "price": 79000,
+          "quantity": 1
+        },
+        {
+          "bookId": "b-101",
+          "title": "Học ReactJS Toàn Tập",
+          "price": 150000,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 229000,
+      "status": "Pending",
+      "orderDate": "2026-11-09T20:15:12.480Z"
     }
   ],
   "users": [
@@ -241,6 +267,14 @@
       "username": "kypt",
       "password": "Tipi3010",
       "fullName": "Đỗ Trần Thiên Phúc",
+      "role": "customer",
+      "isDeleted": false
+    },
+    {
+      "id": "UnQPPC9bBrQ",
+      "username": "tuan",
+      "password": "Tuan123",
+      "fullName": "Trương Anh Tuấn",
       "role": "customer",
       "isDeleted": false
     }

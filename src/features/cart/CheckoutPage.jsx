@@ -84,6 +84,9 @@ const CheckoutPage = () => {
       newErrors.customerName = "Vui lòng nhập họ và tên người nhận.";
     } else if (name.length < 2) {
       newErrors.customerName = "Họ và tên phải có ít nhất 2 ký tự.";
+    } else if (!/^[\p{L}\s]+$/u.test(name)) {
+      newErrors.customerName =
+        "Họ và tên chỉ được chứa chữ cái và khoảng trắng.";
     }
 
     if (!rawPhone) {
@@ -109,6 +112,16 @@ const CheckoutPage = () => {
     } else if (address.length < 6) {
       newErrors.address =
         "Địa chỉ giao hàng cần chi tiết hơn (tối thiểu 6 ký tự).";
+    } else if (!/^[\p{L}\p{N}\s,./()-]+$/u.test(address)) {
+      newErrors.address =
+        "Địa chỉ nhận hàng không được chứa các ký tự đặc biệt (như %, *, &, ^, $, #...).";
+    } else if ((address.match(/\p{L}/gu) || []).length < 3) {
+      newErrors.address =
+        "Địa chỉ không hợp lệ. Vui lòng nhập rõ tên đường, phường/xã, quận/huyện cụ thể.";
+    }
+
+    if (formData.note && formData.note.trim().length > 200) {
+      newErrors.note = "Ghi chú giao hàng không được vượt quá 200 ký tự.";
     }
 
     setErrors(newErrors);
@@ -135,8 +148,82 @@ const CheckoutPage = () => {
     setSubmitting(true);
     setApiError("");
 
+    let updatedBooks = [];
+
     try {
-      // 1. Fetch current orders to generate sequential ID (e.g. ord-1003)
+      // 1. Kiểm tra tồn kho & lấy giá thực tế từ server cho toàn bộ giỏ hàng (Chống Race Condition & Tampering)
+      const bookResponses = await Promise.all(
+        items.map((cartItem) =>
+          axios.get(`${API_BASE_URL}/books/${cartItem.id}`)
+        )
+      );
+
+      const verifiedItems = [];
+      const stockErrors = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const cartItem = items[i];
+        const serverBook = bookResponses[i]?.data;
+
+        if (!serverBook || serverBook.isDeleted) {
+          stockErrors.push(`Sách "${cartItem.title}" hiện không còn kinh doanh.`);
+          continue;
+        }
+
+        const currentStock = Number(serverBook.stock) || 0;
+        const requestedQty = Number(cartItem.quantity) || 1;
+
+        if (currentStock <= 0) {
+          stockErrors.push(
+            `Sách "${serverBook.title}" đã hết hàng trong kho (kho: 0).`
+          );
+        } else if (currentStock < requestedQty) {
+          stockErrors.push(
+            `Sách "${serverBook.title}" chỉ còn ${currentStock} cuốn trong kho (bạn đặt ${requestedQty} cuốn).`
+          );
+        }
+
+        // Lấy giá thực tế từ server, ngăn chặn người dùng sửa giá ở localStorage/Redux (Tampering)
+        const actualPrice = Number(serverBook.price) || 0;
+
+        verifiedItems.push({
+          bookId: cartItem.id,
+          title: serverBook.title,
+          price: actualPrice,
+          quantity: requestedQty,
+          currentStock: currentStock,
+          newStock: currentStock - requestedQty,
+        });
+      }
+
+      // Nếu có bất kỳ lỗi tồn kho nào, dừng việc đặt hàng ngay lập tức
+      if (stockErrors.length > 0) {
+        setApiError(
+          `Không thể đặt hàng do thay đổi tồn kho:\n• ${stockErrors.join("\n• ")}\nVui lòng cập nhật lại giỏ hàng!`
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. Trừ tồn kho đồng bộ bằng await Promise.all (Giải quyết lỗi items.forEach bất đồng bộ không chờ đợi)
+      await Promise.all(
+        verifiedItems.map((vItem) =>
+          axios.patch(`${API_BASE_URL}/books/${vItem.bookId}`, {
+            stock: vItem.newStock,
+          })
+        )
+      );
+
+      // Ghi nhận danh sách sách đã trừ kho thành công (phục vụ rollback nếu tạo order lỗi)
+      updatedBooks = verifiedItems;
+
+      // 3. Tính toán tổng tiền thực tế dựa trên giá từ server
+      const verifiedTotalAmount = verifiedItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+
+      // 4. Sinh mã đơn hàng tuần tự
       let nextId = `ord-${Date.now()}`;
       try {
         const ordersRes = await axios.get(`${API_BASE_URL}/orders`);
@@ -156,7 +243,7 @@ const CheckoutPage = () => {
         );
       }
 
-      // 2. Prepare new order payload
+      // 5. Chuẩn bị payload và gửi POST /orders
       const newOrder = {
         id: nextId,
         userId: currentUser?.id || "guest",
@@ -165,46 +252,47 @@ const CheckoutPage = () => {
         address: formData.address.trim(),
         note: formData.note.trim(),
         paymentMethod: formData.paymentMethod,
-        items: items.map((item) => ({
-          bookId: item.id,
-          title: item.title,
-          price: Number(item.price) || 0,
-          quantity: Number(item.quantity) || 1,
+        items: verifiedItems.map(({ bookId, title, price, quantity }) => ({
+          bookId,
+          title,
+          price,
+          quantity,
         })),
-        totalAmount,
+        totalAmount: verifiedTotalAmount,
         status: "Pending",
         orderDate: new Date().toISOString(),
       };
 
-      // 3. Post order to json-server
       const createRes = await axios.post(`${API_BASE_URL}/orders`, newOrder);
 
-      // 4. Update book stocks in background
-      items.forEach(async (cartItem) => {
-        try {
-          const bookRes = await axios.get(
-            `${API_BASE_URL}/books/${cartItem.id}`,
-          );
-          const currentStock = Number(bookRes.data.stock) || 0;
-          const updatedStock = Math.max(0, currentStock - cartItem.quantity);
-          await axios.patch(`${API_BASE_URL}/books/${cartItem.id}`, {
-            stock: updatedStock,
-          });
-        } catch (stockErr) {
-          console.warn(
-            `Could not update stock for book ${cartItem.id}:`,
-            stockErr,
-          );
-        }
-      });
-
-      // 5. Clear cart and set success state
+      // 6. Xóa giỏ hàng và chuyển sang màn hình thành công
       dispatch(clearCart());
       setPlacedOrder(createRes.data || newOrder);
     } catch (err) {
       console.error("Order placement failed:", err);
+
+      // Rollback tồn kho nếu đã trừ kho nhưng tạo đơn thất bại
+      if (updatedBooks.length > 0) {
+        console.warn("Rolling back deducted book stocks...");
+        await Promise.all(
+          updatedBooks.map((vItem) =>
+            axios
+              .patch(`${API_BASE_URL}/books/${vItem.bookId}`, {
+                stock: vItem.currentStock,
+              })
+              .catch((rollbackErr) =>
+                console.error(
+                  `Rollback failed for book ${vItem.bookId}:`,
+                  rollbackErr,
+                ),
+              ),
+          ),
+        );
+      }
+
       setApiError(
         err.response?.data?.message ||
+          err.message ||
           "Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại!",
       );
     } finally {
@@ -271,7 +359,12 @@ const CheckoutPage = () => {
       </h2>
 
       {apiError && (
-        <Alert variant="danger" dismissible onClose={() => setApiError("")}>
+        <Alert
+          variant="danger"
+          dismissible
+          onClose={() => setApiError("")}
+          style={{ whiteSpace: "pre-line" }}
+        >
           {apiError}
         </Alert>
       )}
@@ -344,20 +437,45 @@ const CheckoutPage = () => {
                   <Form.Control.Feedback type="invalid">
                     {errors.address}
                   </Form.Control.Feedback>
+                  {!errors.address && (
+                    <Form.Text
+                      className="text-muted"
+                      style={{ fontSize: "0.8rem" }}
+                    >
+                      Bao gồm số nhà, tên đường, phường/xã, quận/huyện (tối thiểu 6 ký tự).
+                    </Form.Text>
+                  )}
                 </Form.Group>
 
                 <Form.Group className="mb-3" controlId="checkoutNote">
-                  <Form.Label className="fw-semibold small">
-                    Ghi chú giao hàng (tuỳ chọn):
-                  </Form.Label>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <Form.Label className="fw-semibold small mb-0">
+                      Ghi chú giao hàng (tuỳ chọn):
+                    </Form.Label>
+                    <span
+                      className={`small ${
+                        formData.note.length > 200
+                          ? "text-danger fw-bold"
+                          : "text-muted"
+                      }`}
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      {formData.note.length}/200 ký tự
+                    </span>
+                  </div>
                   <Form.Control
                     as="textarea"
                     rows={2}
                     name="note"
                     value={formData.note}
                     onChange={handleChange}
+                    maxLength={200}
+                    isInvalid={!!errors.note}
                     placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao..."
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.note}
+                  </Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-0">
@@ -371,20 +489,13 @@ const CheckoutPage = () => {
                       name="paymentMethod"
                       value="cod"
                       label="💵 Thanh toán tiền mặt khi nhận hàng (COD)"
-                      checked={formData.paymentMethod === "cod"}
-                      onChange={handleChange}
-                      className="mb-2 fw-medium"
+                      checked
+                      readOnly
+                      className="fw-medium text-dark"
                     />
-                    <Form.Check
-                      type="radio"
-                      id="payment-banking"
-                      name="paymentMethod"
-                      value="banking"
-                      label="🏦 Chuyển khoản ngân hàng (QR Code / Internet Banking)"
-                      checked={formData.paymentMethod === "banking"}
-                      onChange={handleChange}
-                      className="fw-medium"
-                    />
+                    <small className="text-muted d-block mt-1 ms-4 ps-1">
+                      Thanh toán bằng tiền mặt trực tiếp cho nhân viên giao hàng khi nhận sách.
+                    </small>
                   </div>
                 </Form.Group>
               </Card.Body>
